@@ -44,25 +44,40 @@ async fn main() -> anyhow::Result<()> {
             )
             .await
         }
-        Commands::Start { container } => start::handle_start(container).await,
-        Commands::Stop { container, timeout } => stop::handle_stop(container, timeout).await,
-        Commands::Restart { container } => {
+        Commands::Start {
+            container,
+            interactive,
+        } => start::handle_start(container, interactive).await,
+        Commands::Stop {
+            container,
+            interactive,
+            timeout,
+        } => stop::handle_stop(container, interactive, timeout).await,
+        Commands::Restart {
+            container,
+            interactive,
+        } => {
             // Restart is stop + start
-            stop::handle_stop(container.clone(), 10).await?;
-            start::handle_start(container).await
+            stop::handle_stop(container.clone(), interactive, 10).await?;
+            start::handle_start(container, interactive).await
         }
         Commands::Destroy {
             container,
+            interactive,
             yes,
             volumes,
-        } => destroy::handle_destroy(container, yes, volumes).await,
+        } => destroy::handle_destroy(container, interactive, yes, volumes).await,
         Commands::List { all } => list::handle_list(all).await,
-        Commands::Inspect { container } => inspect::handle_inspect(container).await,
+        Commands::Inspect {
+            container,
+            interactive,
+        } => inspect::handle_inspect(container, interactive).await,
         Commands::Logs {
             container,
+            interactive,
             follow,
             tail,
-        } => logs::handle_logs(container, follow, tail).await
+        } => logs::handle_logs(container, interactive, follow, tail).await
     };
 
     if let Err(e) = result {

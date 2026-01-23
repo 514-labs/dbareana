@@ -212,3 +212,79 @@ pub struct AdvancedOptions {
     pub cpu_shares: Option<u64>,
     pub persistent: bool,
 }
+
+/// Interactive container selection
+pub fn select_container(containers: Vec<crate::container::Container>, action: &str) -> Result<String> {
+    if containers.is_empty() {
+        return Err(crate::SimDbError::Other(format!(
+            "No containers available to {}",
+            action
+        )));
+    }
+
+    println!("\n{}", style(format!("Select container to {}", action)).bold().cyan());
+    println!("{}", "─".repeat(50));
+
+    let items: Vec<String> = containers
+        .iter()
+        .map(|c| {
+            format!(
+                "{:<20} {:<15} {:<12}",
+                c.name,
+                c.database_type,
+                c.status.to_string()
+            )
+        })
+        .collect();
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Container")
+        .items(&items)
+        .interact()
+        .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+
+    Ok(containers[selection].name.clone())
+}
+
+/// Interactive multi-container selection
+pub fn select_containers(
+    containers: Vec<crate::container::Container>,
+    action: &str,
+) -> Result<Vec<String>> {
+    if containers.is_empty() {
+        return Err(crate::SimDbError::Other(format!(
+            "No containers available to {}",
+            action
+        )));
+    }
+
+    println!("\n{}", style(format!("Select containers to {}", action)).bold().cyan());
+    println!("{}", "─".repeat(50));
+
+    let items: Vec<String> = containers
+        .iter()
+        .map(|c| {
+            format!(
+                "{:<20} {:<15} {:<12}",
+                c.name,
+                c.database_type,
+                c.status.to_string()
+            )
+        })
+        .collect();
+
+    let selections = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Containers (use Space to select, Enter to confirm)")
+        .items(&items)
+        .interact()
+        .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+
+    if selections.is_empty() {
+        return Err(crate::SimDbError::Other("No containers selected".to_string()));
+    }
+
+    Ok(selections
+        .into_iter()
+        .map(|idx| containers[idx].name.clone())
+        .collect())
+}

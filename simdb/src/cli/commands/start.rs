@@ -1,4 +1,6 @@
+use crate::cli::interactive;
 use crate::container::{ContainerManager, DatabaseType, DockerClient};
+use crate::container::models::ContainerStatus;
 use crate::health::{
     wait_for_healthy, MySQLHealthChecker, PostgresHealthChecker, SQLServerHealthChecker,
 };
@@ -8,17 +10,35 @@ use std::time::Duration;
 
 const DEFAULT_HEALTH_TIMEOUT: Duration = Duration::from_secs(60);
 
-pub async fn handle_start(container: String) -> Result<()> {
+pub async fn handle_start(container: Option<String>, interactive_mode: bool) -> Result<()> {
     let docker_client = DockerClient::new()?;
     docker_client.verify_connection().await?;
 
     let manager = ContainerManager::new(docker_client);
 
+    // Get container name
+    let container_name = if interactive_mode {
+        // List stopped containers for selection
+        let all_containers = manager.list_containers(true).await?;
+        let stopped_containers: Vec<_> = all_containers
+            .into_iter()
+            .filter(|c| matches!(c.status, ContainerStatus::Stopped | ContainerStatus::Exited))
+            .collect();
+
+        interactive::select_container(stopped_containers, "start")?
+    } else {
+        container.ok_or_else(|| {
+            SimDbError::InvalidConfig(
+                "Container name required. Use -i for interactive mode.".to_string(),
+            )
+        })?
+    };
+
     // Find the container
     let found = manager
-        .find_container(&container)
+        .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container.clone()))?;
+        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
 
     println!(
         "{} Starting container {}...",

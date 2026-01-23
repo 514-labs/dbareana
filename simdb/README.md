@@ -138,6 +138,8 @@ simdb create postgres mysql sqlserver
 
 ### Managing Containers
 
+All management commands support interactive mode with `-i` flag:
+
 ```bash
 # List all running containers
 simdb list
@@ -147,33 +149,41 @@ simdb list --all
 
 # Start a stopped container
 simdb start my-db
+simdb start -i              # Interactive: select from stopped containers
 
 # Stop a running container
 simdb stop my-db
+simdb stop -i               # Interactive: select from running containers
 
 # Stop with custom timeout (default: 10s)
 simdb stop my-db --timeout 30
 
 # Restart a container
 simdb restart my-db
+simdb restart -i            # Interactive: select from running containers
 
 # Inspect container details
 simdb inspect my-db
+simdb inspect -i            # Interactive: select any container
 
 # View logs
 simdb logs my-db
+simdb logs -i               # Interactive: select any container
 
 # Follow logs (like docker logs -f)
 simdb logs my-db --follow
+simdb logs -i --follow      # Interactive with follow mode
 
 # Show last 50 lines
 simdb logs my-db --tail 50
 
 # Destroy a container
 simdb destroy my-db
+simdb destroy -i            # Interactive: multi-select containers to destroy
 
 # Skip confirmation prompt
 simdb destroy my-db -y
+simdb destroy -i -y         # Interactive with auto-confirm
 
 # Also remove volumes
 simdb destroy my-db -v

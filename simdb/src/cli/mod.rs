@@ -63,13 +63,21 @@ pub enum Commands {
     /// Start a stopped container
     Start {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select from stopped containers
+        #[arg(short, long)]
+        interactive: bool,
     },
 
     /// Stop a running container
     Stop {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select from running containers
+        #[arg(short, long)]
+        interactive: bool,
 
         /// Timeout in seconds before force kill
         #[arg(short, long, default_value = "10")]
@@ -79,13 +87,21 @@ pub enum Commands {
     /// Restart a container
     Restart {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select from running containers
+        #[arg(short, long)]
+        interactive: bool,
     },
 
     /// Destroy a container
     Destroy {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select containers to destroy
+        #[arg(short, long)]
+        interactive: bool,
 
         /// Skip confirmation prompt
         #[arg(short = 'y', long)]
@@ -106,13 +122,21 @@ pub enum Commands {
     /// Inspect container details
     Inspect {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select container to inspect
+        #[arg(short, long)]
+        interactive: bool,
     },
 
     /// Show container logs
     Logs {
         /// Container name or ID
-        container: String,
+        container: Option<String>,
+
+        /// Interactive mode - select container for logs
+        #[arg(short, long)]
+        interactive: bool,
 
         /// Follow log output
         #[arg(short, long)]

@@ -1,19 +1,38 @@
+use crate::cli::interactive;
 use crate::container::{ContainerManager, DockerClient};
 use crate::{Result, SimDbError};
 use bollard::container::LogsOptions;
 use futures::StreamExt;
 
-pub async fn handle_logs(container: String, follow: bool, tail: Option<usize>) -> Result<()> {
+pub async fn handle_logs(
+    container: Option<String>,
+    interactive_mode: bool,
+    follow: bool,
+    tail: Option<usize>,
+) -> Result<()> {
     let docker_client = DockerClient::new()?;
     docker_client.verify_connection().await?;
 
     let manager = ContainerManager::new(docker_client);
 
+    // Get container name
+    let container_name = if interactive_mode {
+        // List all containers for selection
+        let all_containers = manager.list_containers(true).await?;
+        interactive::select_container(all_containers, "view logs")?
+    } else {
+        container.ok_or_else(|| {
+            SimDbError::InvalidConfig(
+                "Container name required. Use -i for interactive mode.".to_string(),
+            )
+        })?
+    };
+
     // Find the container
     let found = manager
-        .find_container(&container)
+        .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container.clone()))?;
+        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
 
     let options = LogsOptions {
         stdout: true,
