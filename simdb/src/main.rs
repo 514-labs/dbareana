@@ -24,6 +24,7 @@ async fn main() -> anyhow::Result<()> {
     let result = match cli.command {
         Commands::Create {
             databases,
+            interactive,
             version,
             name,
             port,
@@ -33,6 +34,7 @@ async fn main() -> anyhow::Result<()> {
         } => {
             create::handle_create(
                 databases,
+                interactive,
                 version,
                 name,
                 port,

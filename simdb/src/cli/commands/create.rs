@@ -1,3 +1,4 @@
+use crate::cli::interactive;
 use crate::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
 use crate::health::{
     wait_for_healthy, MySQLHealthChecker, PostgresHealthChecker, SQLServerHealthChecker,
@@ -12,6 +13,7 @@ const DEFAULT_HEALTH_TIMEOUT: Duration = Duration::from_secs(60);
 
 pub async fn handle_create(
     databases: Vec<String>,
+    interactive_mode: bool,
     version: Option<String>,
     name: Option<String>,
     port: Option<u16>,
@@ -21,12 +23,40 @@ pub async fn handle_create(
 ) -> Result<()> {
     info!("Starting create command");
 
-    // Validate that at least one database was specified
-    if databases.is_empty() {
-        return Err(crate::SimDbError::InvalidConfig(
-            "At least one database type must be specified".to_string(),
-        ));
-    }
+    // Handle interactive mode
+    let (selections, memory, cpu_shares, persistent) = if interactive_mode {
+        let selections = interactive::select_databases()?;
+
+        // Prompt for advanced options
+        let advanced = interactive::prompt_advanced_options()?;
+        let memory = advanced.memory;
+        let cpu_shares = advanced.cpu_shares;
+        let persistent = advanced.persistent;
+
+        (selections, memory, cpu_shares, persistent)
+    } else {
+        // Validate that at least one database was specified
+        if databases.is_empty() {
+            return Err(crate::SimDbError::InvalidConfig(
+                "At least one database type must be specified. Use -i for interactive mode or provide database names.".to_string(),
+            ));
+        }
+
+        // Convert CLI args to selections
+        let selections = databases
+            .into_iter()
+            .map(|db_name| {
+                let database = DatabaseType::from_string(&db_name).ok_or_else(|| {
+                    crate::SimDbError::InvalidConfig(format!("Unknown database type: {}", db_name))
+                })?;
+                Ok(interactive::DatabaseSelection {
+                    database,
+                    version: version.clone().unwrap_or_else(|| database.default_version().to_string()),
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        (selections, memory, cpu_shares, persistent)
+    };
 
     // Initialize Docker client
     let pb = ProgressBar::new_spinner();
@@ -44,11 +74,12 @@ pub async fn handle_create(
     let manager = ContainerManager::new(docker_client);
 
     // Create containers
-    for db_name in databases {
+    for selection in selections {
+        let db_name = selection.database.as_str();
         if let Err(e) = create_single_database(
             &manager,
-            &db_name,
-            version.clone(),
+            selection.database,
+            selection.version,
             name.clone(),
             port,
             persistent,
@@ -67,19 +98,14 @@ pub async fn handle_create(
 
 async fn create_single_database(
     manager: &ContainerManager,
-    db_name: &str,
-    version: Option<String>,
+    database: DatabaseType,
+    version: String,
     name: Option<String>,
     port: Option<u16>,
     persistent: bool,
     memory: Option<u64>,
     cpu_shares: Option<u64>,
 ) -> Result<()> {
-    // Parse database type
-    let database = DatabaseType::from_string(db_name).ok_or_else(|| {
-        crate::SimDbError::InvalidConfig(format!("Unknown database type: {}", db_name))
-    })?;
-
     println!(
         "\n{} Creating {} container...",
         style("→").cyan(),
@@ -88,9 +114,7 @@ async fn create_single_database(
 
     // Build configuration
     let mut config = ContainerConfig::new(database);
-    if let Some(v) = version {
-        config = config.with_version(v);
-    }
+    config = config.with_version(version);
     if let Some(n) = name {
         config = config.with_name(n);
     }

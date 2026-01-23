@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod interactive;
 
 use clap::{Parser, Subcommand};
 
@@ -29,6 +30,10 @@ pub enum Commands {
     Create {
         /// Database type(s) to create (postgres, mysql, sqlserver)
         databases: Vec<String>,
+
+        /// Interactive mode - select databases and versions via menu
+        #[arg(short, long)]
+        interactive: bool,
 
         /// Database version
         #[arg(short, long)]

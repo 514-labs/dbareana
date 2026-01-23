@@ -24,6 +24,9 @@ cargo build --release
 # Create a PostgreSQL database (defaults to port 5432)
 ./target/release/simdb create postgres
 
+# Interactive mode - select databases and versions via menu
+./target/release/simdb create -i
+
 # Create with custom settings
 ./target/release/simdb create postgres --version 15 --name my-db --port 5433
 
@@ -58,6 +61,7 @@ cargo build --release
 
 - ✅ **Container Lifecycle Management** - Create, start, stop, restart, destroy
 - ✅ **Multi-Database Support** - PostgreSQL, MySQL, SQL Server
+- ✅ **Interactive Mode** - Visual menus for database and version selection
 - ✅ **Health Checking** - Automatic readiness detection
 - ✅ **Resource Management** - Memory limits, CPU shares, tmpfs mounts
 - ✅ **CLI Interface** - Comprehensive command-line interface
@@ -92,6 +96,23 @@ cargo build --release
 ## Usage
 
 ### Creating Databases
+
+#### Interactive Mode
+
+The easiest way to create databases is with interactive mode:
+
+```bash
+# Launch interactive menu
+simdb create -i
+```
+
+This will guide you through:
+1. **Multi-select database types** - Choose PostgreSQL, MySQL, and/or SQL Server
+2. **Version selection** - Pick from common versions or specify a custom one
+3. **Advanced options** (optional) - Configure memory limits, CPU shares, and persistence
+4. **Confirmation** - Review your selections before proceeding
+
+#### Command-Line Mode
 
 ```bash
 # Create with defaults
