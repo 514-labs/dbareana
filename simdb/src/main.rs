@@ -1,4 +1,5 @@
 use clap::Parser;
+use simdb::cli::commands::{create, destroy, inspect, list, logs, start, stop};
 use simdb::cli::{Cli, Commands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
@@ -20,31 +21,51 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     // Handle commands
-    match cli.command {
-        Commands::Create { .. } => {
-            println!("Create command not yet implemented");
+    let result = match cli.command {
+        Commands::Create {
+            databases,
+            version,
+            name,
+            port,
+            persistent,
+            memory,
+            cpu_shares,
+        } => {
+            create::handle_create(
+                databases,
+                version,
+                name,
+                port,
+                persistent,
+                memory,
+                cpu_shares,
+            )
+            .await
         }
-        Commands::Start { .. } => {
-            println!("Start command not yet implemented");
+        Commands::Start { container } => start::handle_start(container).await,
+        Commands::Stop { container, timeout } => stop::handle_stop(container, timeout).await,
+        Commands::Restart { container } => {
+            // Restart is stop + start
+            stop::handle_stop(container.clone(), 10).await?;
+            start::handle_start(container).await
         }
-        Commands::Stop { .. } => {
-            println!("Stop command not yet implemented");
-        }
-        Commands::Restart { .. } => {
-            println!("Restart command not yet implemented");
-        }
-        Commands::Destroy { .. } => {
-            println!("Destroy command not yet implemented");
-        }
-        Commands::List { .. } => {
-            println!("List command not yet implemented");
-        }
-        Commands::Inspect { .. } => {
-            println!("Inspect command not yet implemented");
-        }
-        Commands::Logs { .. } => {
-            println!("Logs command not yet implemented");
-        }
+        Commands::Destroy {
+            container,
+            yes,
+            volumes,
+        } => destroy::handle_destroy(container, yes, volumes).await,
+        Commands::List { all } => list::handle_list(all).await,
+        Commands::Inspect { container } => inspect::handle_inspect(container).await,
+        Commands::Logs {
+            container,
+            follow,
+            tail,
+        } => logs::handle_logs(container, follow, tail).await
+    };
+
+    if let Err(e) = result {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
     }
 
     Ok(())
