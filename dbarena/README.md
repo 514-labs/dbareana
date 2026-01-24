@@ -15,69 +15,132 @@ dbarena provides instant database environments for testing, development, and exp
 - MySQL (default: v8.0)
 - SQL Server (default: 2022-latest)
 
-## Quick Start
+## Installation
+
+### Quick Install (macOS)
+
+Install dbarena with a single command:
 
 ```bash
-# Build the project
-cargo build --release
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/install.sh | bash
+```
 
+This will:
+- Download the latest release binary
+- Verify the checksum
+- Install to `/usr/local/bin/dbarena`
+- Make it available in your PATH
+
+After installation, verify it works:
+```bash
+dbarena --version
+```
+
+### Manual Installation
+
+Download the binary from [GitHub Releases](https://github.com/514-labs/dbareana/releases/latest):
+
+```bash
+# Download
+curl -LO https://github.com/514-labs/dbareana/releases/download/v0.2.0/dbarena
+
+# Make executable
+chmod +x dbarena
+
+# Move to PATH
+sudo mv dbarena /usr/local/bin/
+
+# Verify
+dbarena --version
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/514-labs/dbareana.git
+cd dbareana
+cargo build --release
+sudo cp target/release/dbarena /usr/local/bin/
+```
+
+### Uninstall
+
+```bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/uninstall.sh | bash
+```
+
+Or manually:
+```bash
+sudo rm /usr/local/bin/dbarena
+```
+
+## Quick Start
+
+After [installation](#installation), you can start using dbarena:
+
+```bash
 # Interactive mode - just run dbarena without any command!
-./target/release/dbarena
+dbarena
 
 # Or use specific commands:
 
 # Create a PostgreSQL database (defaults to port 5432)
-./target/release/dbarena create postgres
+dbarena create postgres
 
 # Interactive create - select databases and multiple versions via menu
-./target/release/dbarena create -i
+dbarena create -i
 
 # Create with custom settings
-./target/release/dbarena create postgres --version 15 --name my-db --port 5433
+dbarena create postgres --version 15 --name my-db --port 5433
 
 # Create multiple databases at once
-./target/release/dbarena create postgres mysql sqlserver
+dbarena create postgres mysql sqlserver
 
 # List all containers
-./target/release/dbarena list
+dbarena list
 
 # Stop a container
-./target/release/dbarena stop my-db
+dbarena stop my-db
 
 # Start a stopped container
-./target/release/dbarena start my-db
+dbarena start my-db
 
 # Inspect container details
-./target/release/dbarena inspect my-db
+dbarena inspect my-db
 
 # View logs
-./target/release/dbarena logs my-db
+dbarena logs my-db
 
 # Destroy a container
-./target/release/dbarena destroy my-db
+dbarena destroy my-db
 
 # Show help
-./target/release/dbarena --help
+dbarena --help
+```
 
-# NEW in v0.2.0 - Configuration & Init Scripts:
+### v0.2.0 Features - Configuration & Init Scripts
+
+```bash
+# Generate example configuration
+dbarena config init > dbarena.toml
 
 # Use environment profiles
-./target/release/dbarena create postgres --profile dev
+dbarena create postgres --profile dev
 
 # Run initialization scripts
-./target/release/dbarena create postgres --init-script ./schema.sql
+dbarena create postgres --init-script ./schema.sql
 
 # Override environment variables
-./target/release/dbarena create postgres --env POSTGRES_DB=myapp
+dbarena create postgres --env POSTGRES_DB=myapp
 
 # Load from env file
-./target/release/dbarena create postgres --env-file .env.local
+dbarena create postgres --env-file .env.local
 
 # Use configuration file
-./target/release/dbarena create postgres --config ./dbarena.toml
+dbarena create postgres --config ./dbarena.toml
 
 # Execute SQL on running container
-./target/release/dbarena exec --script "SELECT * FROM users;"
+dbarena exec my-postgres "SELECT * FROM users;"
 
 # Execute SQL interactively
 ./target/release/dbarena exec -i --file ./query.sql
