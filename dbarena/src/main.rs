@@ -6,6 +6,19 @@ use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Set up Ctrl+C handler
+    let result = tokio::select! {
+        result = run() => result,
+        _ = tokio::signal::ctrl_c() => {
+            eprintln!("\n\nInterrupted by user (Ctrl+C)");
+            std::process::exit(130); // Standard exit code for SIGINT
+        }
+    };
+
+    result
+}
+
+async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     // Setup logging

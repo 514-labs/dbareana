@@ -1,6 +1,6 @@
 [package]
 name = "dbarena"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["dbarena Contributors"]
 description = "A high-performance database simulation environment with Docker container management"
