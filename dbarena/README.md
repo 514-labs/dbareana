@@ -22,7 +22,7 @@ dbarena provides instant database environments for testing, development, and exp
 Install dbarena with a single command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
 ```
 
 This will:
@@ -66,7 +66,7 @@ sudo cp target/release/dbarena /usr/local/bin/
 ### Uninstall
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/uninstall.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/uninstall.sh | bash
 ```
 
 Or manually:

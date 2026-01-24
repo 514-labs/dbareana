@@ -1,6 +1,6 @@
 #!/bin/bash
 # dbarena installation script
-# Usage: curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
 
 set -e
 
