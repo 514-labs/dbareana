@@ -1,6 +1,7 @@
 use clap::Parser;
-use simdb::cli::commands::{create, destroy, inspect, list, logs, start, stop};
-use simdb::cli::{Cli, Commands};
+use dbarena::cli::commands::{create, destroy, inspect, list, logs, start, stop};
+use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
+use dbarena::cli::{Cli, Commands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -9,10 +10,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Setup logging
     let filter = match cli.verbose {
-        0 => "simdb=info",
-        1 => "simdb=debug",
-        2 => "simdb=trace",
-        _ => "simdb=trace,bollard=debug",
+        0 => "dbarena=warn",
+        1 => "dbarena=info",
+        2 => "dbarena=debug",
+        3 => "dbarena=trace",
+        _ => "dbarena=trace,bollard=debug",
     };
 
     tracing_subscriber::registry()
@@ -20,8 +22,61 @@ async fn main() -> anyhow::Result<()> {
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(filter)))
         .init();
 
+    // If no command specified, show main menu
+    let command = if let Some(cmd) = cli.command {
+        cmd
+    } else {
+        // Show interactive main menu
+        match show_main_menu()? {
+            MainMenuChoice::Create => Commands::Create {
+                databases: vec![],
+                interactive: true,
+                version: None,
+                name: None,
+                port: None,
+                persistent: false,
+                memory: None,
+                cpu_shares: None,
+            },
+            MainMenuChoice::List => Commands::List { all: false },
+            MainMenuChoice::Start => Commands::Start {
+                container: None,
+                interactive: true,
+            },
+            MainMenuChoice::Stop => Commands::Stop {
+                container: None,
+                interactive: true,
+                timeout: 10,
+            },
+            MainMenuChoice::Restart => Commands::Restart {
+                container: None,
+                interactive: true,
+            },
+            MainMenuChoice::Destroy => Commands::Destroy {
+                container: None,
+                interactive: true,
+                yes: false,
+                volumes: false,
+            },
+            MainMenuChoice::Inspect => Commands::Inspect {
+                container: None,
+                interactive: true,
+            },
+            MainMenuChoice::Logs => Commands::Logs {
+                container: None,
+                interactive: true,
+                follow: false,
+                tail: None,
+            },
+            MainMenuChoice::Exit => {
+                println!("\n{}", console::style("Goodbye! 👋").cyan());
+                return Ok(());
+            }
+        }
+    };
+
     // Handle commands
-    let result = match cli.command {
+    let result = match command {
         Commands::Create {
             databases,
             interactive,
@@ -77,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
             interactive,
             follow,
             tail,
-        } => logs::handle_logs(container, interactive, follow, tail).await
+        } => logs::handle_logs(container, interactive, follow, tail).await,
     };
 
     if let Err(e) = result {

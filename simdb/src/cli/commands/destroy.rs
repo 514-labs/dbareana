@@ -1,7 +1,8 @@
 use crate::cli::interactive;
 use crate::container::{ContainerManager, DockerClient};
-use crate::{Result, SimDbError};
+use crate::{DBArenaError, Result};
 use console::style;
+use dialoguer;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::io::{self, Write};
 use std::time::Instant;
@@ -24,7 +25,7 @@ pub async fn handle_destroy(
         interactive::select_containers(all_containers, "destroy")?
     } else {
         vec![container.ok_or_else(|| {
-            SimDbError::InvalidConfig(
+            DBArenaError::InvalidConfig(
                 "Container name required. Use -i for interactive mode.".to_string(),
             )
         })?]
@@ -34,7 +35,13 @@ pub async fn handle_destroy(
     if container_names.len() > 1 {
         destroy_multiple_with_progress(&manager, container_names, yes, volumes).await
     } else {
-        destroy_single(&manager, container_names.into_iter().next().unwrap(), yes, volumes).await
+        destroy_single(
+            &manager,
+            container_names.into_iter().next().unwrap(),
+            yes,
+            volumes,
+        )
+        .await
     }
 }
 
@@ -48,7 +55,7 @@ async fn destroy_single(
     let found = manager
         .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+        .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
     // Confirmation prompt if not using -y flag
     if !yes {
@@ -95,19 +102,41 @@ async fn destroy_multiple_with_progress(
     let multi_progress = MultiProgress::new();
     let mut confirmed_containers = Vec::new();
 
+    // If not using -y flag and multiple containers, ask for yes to all
+    let mut yes_to_all = yes;
+    if !yes && container_names.len() > 1 {
+        println!(
+            "About to destroy {} containers.",
+            style(container_names.len()).bold()
+        );
+        let confirm_all =
+            dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
+                .with_prompt("Confirm all deletions at once?")
+                .default(false)
+                .interact()
+                .map_err(|e| DBArenaError::Other(format!("Confirmation failed: {}", e)))?;
+
+        if confirm_all {
+            yes_to_all = true;
+            println!(
+                "{} Confirmed: All containers will be destroyed\n",
+                style("✓").green()
+            );
+        } else {
+            println!("You will be asked to confirm each container individually.\n");
+        }
+    }
+
     // Collect confirmed containers
     for container_name in container_names {
         let found = manager
             .find_container(&container_name)
             .await?
-            .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+            .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
-        // Confirmation prompt if not using -y flag
-        if !yes {
-            print!(
-                "Destroy container {}? [y/N] ",
-                style(&found.name).bold()
-            );
+        // Confirmation prompt if not using yes to all
+        if !yes_to_all {
+            print!("Destroy container {}? [y/N] ", style(&found.name).bold());
             io::stdout().flush()?;
 
             let mut input = String::new();
@@ -147,11 +176,20 @@ async fn destroy_multiple_with_progress(
 
         match manager.destroy_container(&container_id, volumes).await {
             Ok(()) => {
-                pb.finish_with_message(format!("{} {:<20} destroyed", style("✓").green(), container_name));
+                pb.finish_with_message(format!(
+                    "{} {:<20} destroyed",
+                    style("✓").green(),
+                    container_name
+                ));
                 success_count += 1;
             }
             Err(e) => {
-                pb.finish_with_message(format!("{} {:<20} failed: {}", style("✗").red(), container_name, e));
+                pb.finish_with_message(format!(
+                    "{} {:<20} failed: {}",
+                    style("✗").red(),
+                    container_name,
+                    e
+                ));
                 failed_count += 1;
             }
         }
@@ -161,7 +199,8 @@ async fn destroy_multiple_with_progress(
 
     // Print summary
     println!("\n{}", "─".repeat(80));
-    println!("{} {} successful, {} failed in {:.2}s",
+    println!(
+        "{} {} successful, {} failed in {:.2}s",
         style("Summary:").bold(),
         style(success_count).green(),
         style(failed_count).red(),
@@ -169,7 +208,10 @@ async fn destroy_multiple_with_progress(
     );
 
     if failed_count > 0 {
-        return Err(SimDbError::Other(format!("{} container(s) failed to destroy", failed_count)));
+        return Err(DBArenaError::Other(format!(
+            "{} container(s) failed to destroy",
+            failed_count
+        )));
     }
 
     Ok(())

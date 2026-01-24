@@ -1,4 +1,4 @@
-use simdb::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
+use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
 
 #[tokio::test]
 #[ignore] // Requires Docker

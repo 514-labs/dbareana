@@ -1,6 +1,6 @@
 use crate::cli::interactive;
 use crate::container::{ContainerManager, DockerClient};
-use crate::{Result, SimDbError};
+use crate::{DBArenaError, Result};
 use bollard::container::LogsOptions;
 use futures::StreamExt;
 
@@ -22,7 +22,7 @@ pub async fn handle_logs(
         interactive::select_container(all_containers, "view logs")?
     } else {
         container.ok_or_else(|| {
-            SimDbError::InvalidConfig(
+            DBArenaError::InvalidConfig(
                 "Container name required. Use -i for interactive mode.".to_string(),
             )
         })?
@@ -32,13 +32,15 @@ pub async fn handle_logs(
     let found = manager
         .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+        .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
     let options = LogsOptions {
         stdout: true,
         stderr: true,
         follow,
-        tail: tail.map(|t| t.to_string()).unwrap_or_else(|| "100".to_string()),
+        tail: tail
+            .map(|t| t.to_string())
+            .unwrap_or_else(|| "100".to_string()),
         ..Default::default()
     };
 

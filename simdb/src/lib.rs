@@ -3,4 +3,4 @@ pub mod container;
 pub mod error;
 pub mod health;
 
-pub use error::{Result, SimDbError};
+pub use error::{DBArenaError, Result};

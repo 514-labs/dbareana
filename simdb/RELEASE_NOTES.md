@@ -2,7 +2,7 @@
 
 ## v0.1.0 - Foundation Release (2026-01-22)
 
-First release of simDB with core container management functionality.
+First release of dbarena with core container management functionality.
 
 ### Features
 
@@ -10,7 +10,7 @@ First release of simDB with core container management functionality.
 - Create, start, stop, restart, and destroy database containers
 - Support for multiple containers simultaneously
 - Automatic container naming or custom names
-- Container tracking with simDB labels
+- Container tracking with dbarena labels
 
 #### Multi-Database Support
 - PostgreSQL (default: v16)
@@ -35,6 +35,10 @@ First release of simDB with core container management functionality.
 
 #### CLI Interface
 - Comprehensive command-line interface
+- **Interactive Mode** - Visual menus with fuzzy search for all commands
+- **Main Menu** - Run without any command for guided interface
+- **Multi-Version Selection** - Create multiple versions of databases simultaneously
+- **Batch Operations** - Select all containers and confirm-all-at-once for destroy
 - Progress indicators for all operations
 - Colored output for better UX
 - Connection strings automatically generated
@@ -42,14 +46,17 @@ First release of simDB with core container management functionality.
 - JSON output support (planned)
 
 #### Commands
-- `simdb create <databases>` - Create and start containers
-- `simdb list [--all]` - List containers
-- `simdb start <container>` - Start stopped container
-- `simdb stop <container> [--timeout]` - Stop running container
-- `simdb restart <container>` - Restart container
-- `simdb destroy <container> [-y] [-v]` - Remove container
-- `simdb inspect <container>` - View details
-- `simdb logs <container> [-f] [--tail]` - View logs
+- `dbarena` - Interactive main menu (no command required)
+- `dbarena create <databases> [-i]` - Create and start containers (use -i for interactive)
+- `dbarena list [--all]` - List containers
+- `dbarena start <container> [-i]` - Start stopped container (use -i to select from menu)
+- `dbarena stop <container> [-i] [--timeout]` - Stop running container
+- `dbarena restart <container> [-i]` - Restart container
+- `dbarena destroy <container> [-i] [-y] [-v]` - Remove container (use -i for multi-select)
+- `dbarena inspect <container> [-i]` - View details
+- `dbarena logs <container> [-i] [-f] [--tail]` - View logs
+
+All commands support `-i` flag for interactive mode with visual menus.
 
 ### Performance
 
@@ -98,10 +105,10 @@ First release - no upgrade needed.
 
 #### From Source
 ```bash
-git clone https://github.com/yourusername/simdb.git
-cd simdb
+git clone https://github.com/yourusername/dbarena.git
+cd dbarena
 cargo build --release
-./target/release/simdb --version
+./target/release/dbarena --version
 ```
 
 #### Requirements
@@ -111,23 +118,32 @@ cargo build --release
 ### Example Usage
 
 ```bash
+# Interactive main menu (easiest way to start)
+dbarena
+
+# Interactive create - select databases and multiple versions
+dbarena create -i
+
 # Create a PostgreSQL database
-simdb create postgres
+dbarena create postgres
 
 # Create multiple databases
-simdb create postgres mysql sqlserver
+dbarena create postgres mysql sqlserver
 
 # Create with custom settings
-simdb create postgres --version 15 --name my-db --port 5433
+dbarena create postgres --version 15 --name my-db --port 5433
 
 # List all containers
-simdb list
+dbarena list
 
-# Stop a container
-simdb stop my-db
+# Stop a container interactively
+dbarena stop -i
 
-# Destroy a container
-simdb destroy my-db -y
+# Destroy multiple containers (select all option available)
+dbarena destroy -i
+
+# Destroy with confirmation skip
+dbarena destroy my-db -y
 ```
 
 ### Contributors
@@ -160,8 +176,8 @@ Built with:
 
 ### Feedback
 
-Please report issues at: https://github.com/yourusername/simdb/issues
+Please report issues at: https://github.com/yourusername/dbarena/issues
 
 ---
 
-Thank you for using simDB!
+Thank you for using dbarena!

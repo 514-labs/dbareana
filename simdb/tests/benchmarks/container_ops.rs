@@ -1,5 +1,5 @@
-use simdb::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
-use simdb::health::{wait_for_healthy, PostgresHealthChecker};
+use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
+use dbarena::health::{wait_for_healthy, PostgresHealthChecker};
 use std::time::{Duration, Instant};
 
 #[tokio::test]

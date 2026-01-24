@@ -1,6 +1,6 @@
 # Interactive Commands Reference
 
-All simDB commands that work with containers support interactive mode via the `-i` flag. This guide shows how to use interactive mode for each command.
+All dbarena commands that work with containers support interactive mode via the `-i` flag. This guide shows how to use interactive mode for each command.
 
 ## Overview
 
@@ -17,7 +17,7 @@ Interactive mode provides:
 **Select databases and versions via menu**
 
 ```bash
-simdb create -i
+dbarena create -i
 ```
 
 Features:
@@ -35,7 +35,7 @@ See [INTERACTIVE_MODE.md](INTERACTIVE_MODE.md) for detailed guide.
 **Select from stopped containers**
 
 ```bash
-simdb start -i
+dbarena start -i
 ```
 
 What it does:
@@ -62,7 +62,7 @@ Container
 **Select from running containers**
 
 ```bash
-simdb stop -i
+dbarena stop -i
 ```
 
 What it does:
@@ -72,7 +72,7 @@ What it does:
 
 Options can be combined:
 ```bash
-simdb stop -i --timeout 30    # Interactive with custom timeout
+dbarena stop -i --timeout 30    # Interactive with custom timeout
 ```
 
 Example flow:
@@ -92,7 +92,7 @@ Container
 **Select from running containers to restart**
 
 ```bash
-simdb restart -i
+dbarena restart -i
 ```
 
 What it does:
@@ -118,18 +118,20 @@ Container
 **Multi-select containers to destroy**
 
 ```bash
-simdb destroy -i
+dbarena destroy -i
 ```
 
 What it does:
 - Lists **all** containers (stopped and running)
-- **Multi-select** support
-- Asks for confirmation per container (unless -y used)
+- **Select all or multi-select** support
+- Asks for confirmation (with "yes to all" option)
 - Destroys selected containers
 
 Features:
-- Select multiple containers with Space
-- Confirmation prompt for each (unless `-y`)
+- **"Select all containers"** option for quick cleanup
+- Select specific containers with Space
+- **"Confirm all deletions at once?"** prompt when multiple containers selected
+- Individual confirmation prompts if not using yes-to-all
 - Optional volume removal with `-v`
 
 Example flow:
@@ -137,18 +139,36 @@ Example flow:
 Select containers to destroy
 ──────────────────────────────────────────────────
 
+Selection mode
+> Select specific containers
+  Select all containers
+
+[If "Select specific containers" chosen:]
+
 Containers (use Space to select, Enter to confirm)
   [x] old-postgres     postgres         stopped
   [ ] my-mysql         mysql            running
   [x] test-db          postgres         exited
   [ ] prod-db          postgres         healthy
+
+[After selection, if multiple containers:]
+
+About to destroy 2 containers.
+? Confirm all deletions at once? (y/N)
+
+[If yes:]
+✓ Confirmed: All containers will be destroyed
+
+[If no:]
+You will be asked to confirm each container individually.
+Destroy container old-postgres? [y/N]
 ```
 
 Combined with flags:
 ```bash
-simdb destroy -i -y           # Skip confirmations
-simdb destroy -i -v           # Also remove volumes
-simdb destroy -i -y -v        # No prompts, remove volumes
+dbarena destroy -i -y           # Skip all confirmations
+dbarena destroy -i -v           # Also remove volumes
+dbarena destroy -i -y -v        # No prompts, remove volumes
 ```
 
 ---
@@ -158,7 +178,7 @@ simdb destroy -i -y -v        # No prompts, remove volumes
 **Select any container to inspect**
 
 ```bash
-simdb inspect -i
+dbarena inspect -i
 ```
 
 What it does:
@@ -184,7 +204,7 @@ Container
 **Select container for log viewing**
 
 ```bash
-simdb logs -i
+dbarena logs -i
 ```
 
 What it does:
@@ -194,9 +214,9 @@ What it does:
 
 Can be combined with log options:
 ```bash
-simdb logs -i --follow        # Interactive with follow mode
-simdb logs -i --tail 100      # Interactive with tail limit
-simdb logs -i -f --tail 50    # Combined options
+dbarena logs -i --follow        # Interactive with follow mode
+dbarena logs -i --tail 100      # Interactive with tail limit
+dbarena logs -i -f --tail 50    # Combined options
 ```
 
 Example flow:
@@ -218,13 +238,13 @@ Container
 
 ```bash
 # See what's available
-simdb list -a
+dbarena list -a
 
 # Start what you need interactively
-simdb start -i
+dbarena start -i
 # Select: my-dev-postgres
 
-simdb start -i
+dbarena start -i
 # Select: my-dev-mysql
 ```
 
@@ -232,11 +252,11 @@ simdb start -i
 
 ```bash
 # Inspect a container
-simdb inspect -i
+dbarena inspect -i
 # Browse and select what to inspect
 
 # Check logs
-simdb logs -i
+dbarena logs -i
 # Select container and review logs
 ```
 
@@ -244,11 +264,11 @@ simdb logs -i
 
 ```bash
 # Stop running containers
-simdb stop -i
+dbarena stop -i
 # Select and stop one by one
 
 # Or destroy multiple at once
-simdb destroy -i
+dbarena destroy -i
 # Multi-select old containers
 # Space on: test-db-1, test-db-2, old-backup
 # Enter to confirm
@@ -258,7 +278,7 @@ simdb destroy -i
 
 ```bash
 # Quick restart during development
-simdb restart -i
+dbarena restart -i
 # Select your dev database
 # Wait for it to come back up
 ```
@@ -290,7 +310,7 @@ Each command shows only relevant containers:
 If you see "No containers available":
 - **start -i**: No stopped containers exist (all are running)
 - **stop -i**: No running containers exist (all are stopped)
-- Check with `simdb list -a` to see all containers
+- Check with `dbarena list -a` to see all containers
 
 ### Combining Interactive with Flags
 
@@ -298,13 +318,13 @@ Interactive mode works with other flags:
 
 ```bash
 # Destroy with auto-confirm and volume removal
-simdb destroy -i -y -v
+dbarena destroy -i -y -v
 
 # Stop with custom timeout
-simdb stop -i --timeout 60
+dbarena stop -i --timeout 60
 
 # Logs with follow and tail
-simdb logs -i -f --tail 200
+dbarena logs -i -f --tail 200
 ```
 
 The `-i` flag always comes before or after other flags - order doesn't matter.
@@ -313,7 +333,7 @@ The `-i` flag always comes before or after other flags - order doesn't matter.
 
 ### Interactive Mode
 ```bash
-simdb start -i
+dbarena start -i
 # Then select from menu
 ```
 
@@ -331,7 +351,7 @@ simdb start -i
 
 ### Command-Line Mode
 ```bash
-simdb start my-postgres
+dbarena start my-postgres
 ```
 
 **Pros:**
@@ -353,14 +373,14 @@ simdb start my-postgres
 Example workflow:
 ```bash
 # Morning: Interactive to start what you need
-simdb start -i
+dbarena start -i
 
 # During day: Direct commands when you know what you want
-simdb logs my-postgres --tail 50
-simdb restart my-postgres
+dbarena logs my-postgres --tail 50
+dbarena restart my-postgres
 
 # Evening: Interactive cleanup
-simdb destroy -i
+dbarena destroy -i
 ```
 
 ## Examples by Scenario
@@ -369,15 +389,15 @@ simdb destroy -i
 
 ```bash
 # See what's available
-$ simdb list -a
+$ dbarena list -a
 
 # Start your development database
-$ simdb start -i
+$ dbarena start -i
 Select container to start
 > my-dev-postgres    postgres    stopped
 
 # Check it's working
-$ simdb inspect -i
+$ dbarena inspect -i
 Select container to inspect
 > my-dev-postgres    postgres    healthy
 ```
@@ -386,12 +406,12 @@ Select container to inspect
 
 ```bash
 # Create test databases interactively
-$ simdb create -i
+$ dbarena create -i
 Select databases: PostgreSQL, MySQL
 Versions: 15, 8.0
 
 # After testing, destroy them all
-$ simdb destroy -i
+$ dbarena destroy -i
 Select containers: [x] test-postgres, [x] test-mysql
 Confirm: Yes for both
 ```
@@ -400,19 +420,19 @@ Confirm: Yes for both
 
 ```bash
 # Find the problematic container
-$ simdb list
+$ dbarena list
 
 # Check its logs
-$ simdb logs -i
+$ dbarena logs -i
 Select container: problematic-db
 # Review logs...
 
 # Restart it
-$ simdb restart -i
+$ dbarena restart -i
 Select container: problematic-db
 
 # Check if it's healthy
-$ simdb inspect -i
+$ dbarena inspect -i
 Select container: problematic-db
 ```
 
@@ -420,10 +440,10 @@ Select container: problematic-db
 
 ```bash
 # See everything
-$ simdb list -a
+$ dbarena list -a
 
 # Destroy old test containers
-$ simdb destroy -i
+$ dbarena destroy -i
 Select multiple:
 [x] old-test-1
 [x] old-test-2
@@ -442,9 +462,9 @@ Use interactive mode as fallback:
 #!/bin/bash
 # Start specific container, or let user choose
 if [ -n "$1" ]; then
-    simdb start "$1"
+    dbarena start "$1"
 else
-    simdb start -i
+    dbarena start -i
 fi
 ```
 
@@ -454,7 +474,7 @@ Use interactive mode to discover container names for scripts:
 
 ```bash
 # Use interactive to find the name
-$ simdb inspect -i
+$ dbarena inspect -i
 # Note: my-postgres-20240122-xyz
 
 # Then use in scripts
@@ -468,7 +488,7 @@ $ ./my-script.sh my-postgres-20240122-xyz
 **Problem:** No containers match the filter for that command
 
 **Solutions:**
-- Check all containers: `simdb list -a`
+- Check all containers: `dbarena list -a`
 - For `start -i`: Create or stop some containers first
 - For `stop -i`: Start some containers first
 
@@ -510,4 +530,4 @@ Interactive mode is available for all container operations:
 | `inspect -i` | Container selection | All | No |
 | `logs -i` | Container selection | All | No |
 
-Remember: `-i` makes simDB interactive and user-friendly, while command-line mode is for speed and automation.
+Remember: `-i` makes dbarena interactive and user-friendly, while command-line mode is for speed and automation.

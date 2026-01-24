@@ -1,10 +1,10 @@
 use crate::cli::interactive;
-use crate::container::{ContainerManager, DatabaseType, DockerClient};
 use crate::container::models::ContainerStatus;
+use crate::container::{ContainerManager, DatabaseType, DockerClient};
 use crate::health::{
     wait_for_healthy, MySQLHealthChecker, PostgresHealthChecker, SQLServerHealthChecker,
 };
-use crate::{Result, SimDbError};
+use crate::{DBArenaError, Result};
 use console::style;
 use std::time::Duration;
 
@@ -28,7 +28,7 @@ pub async fn handle_start(container: Option<String>, interactive_mode: bool) -> 
         interactive::select_container(stopped_containers, "start")?
     } else {
         container.ok_or_else(|| {
-            SimDbError::InvalidConfig(
+            DBArenaError::InvalidConfig(
                 "Container name required. Use -i for interactive mode.".to_string(),
             )
         })?
@@ -38,7 +38,7 @@ pub async fn handle_start(container: Option<String>, interactive_mode: bool) -> 
     let found = manager
         .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+        .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
     println!(
         "{} Starting container {}...",
@@ -56,9 +56,9 @@ pub async fn handle_start(container: Option<String>, interactive_mode: bool) -> 
         DatabaseType::Postgres => Box::new(PostgresHealthChecker::new(
             DockerClient::new()?.docker().clone(),
         )),
-        DatabaseType::MySQL => {
-            Box::new(MySQLHealthChecker::new(DockerClient::new()?.docker().clone()))
-        }
+        DatabaseType::MySQL => Box::new(MySQLHealthChecker::new(
+            DockerClient::new()?.docker().clone(),
+        )),
         DatabaseType::SQLServer => Box::new(SQLServerHealthChecker::new(
             DockerClient::new()?.docker().clone(),
         )),

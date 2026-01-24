@@ -1,4 +1,4 @@
-# simDB - Database Simulation Environment
+# dbarena - Database Simulation Environment
 
 A high-performance database simulation environment with Docker container management, designed for rapid testing and development.
 
@@ -8,7 +8,7 @@ A high-performance database simulation environment with Docker container managem
 
 ## Overview
 
-simDB provides instant database environments for testing, development, and experimentation. It manages Docker containers for popular databases with automatic health checking, resource management, and an intuitive CLI.
+dbarena provides instant database environments for testing, development, and experimentation. It manages Docker containers for popular databases with automatic health checking, resource management, and an intuitive CLI.
 
 **Supported Databases:**
 - PostgreSQL (default: v16)
@@ -21,38 +21,43 @@ simDB provides instant database environments for testing, development, and exper
 # Build the project
 cargo build --release
 
-# Create a PostgreSQL database (defaults to port 5432)
-./target/release/simdb create postgres
+# Interactive mode - just run dbarena without any command!
+./target/release/dbarena
 
-# Interactive mode - select databases and versions via menu
-./target/release/simdb create -i
+# Or use specific commands:
+
+# Create a PostgreSQL database (defaults to port 5432)
+./target/release/dbarena create postgres
+
+# Interactive create - select databases and multiple versions via menu
+./target/release/dbarena create -i
 
 # Create with custom settings
-./target/release/simdb create postgres --version 15 --name my-db --port 5433
+./target/release/dbarena create postgres --version 15 --name my-db --port 5433
 
 # Create multiple databases at once
-./target/release/simdb create postgres mysql sqlserver
+./target/release/dbarena create postgres mysql sqlserver
 
 # List all containers
-./target/release/simdb list
+./target/release/dbarena list
 
 # Stop a container
-./target/release/simdb stop my-db
+./target/release/dbarena stop my-db
 
 # Start a stopped container
-./target/release/simdb start my-db
+./target/release/dbarena start my-db
 
 # Inspect container details
-./target/release/simdb inspect my-db
+./target/release/dbarena inspect my-db
 
 # View logs
-./target/release/simdb logs my-db
+./target/release/dbarena logs my-db
 
 # Destroy a container
-./target/release/simdb destroy my-db
+./target/release/dbarena destroy my-db
 
 # Show help
-./target/release/simdb --help
+./target/release/dbarena --help
 ```
 
 ## Features
@@ -61,14 +66,16 @@ cargo build --release
 
 - ✅ **Container Lifecycle Management** - Create, start, stop, restart, destroy
 - ✅ **Multi-Database Support** - PostgreSQL, MySQL, SQL Server
-- ✅ **Interactive Mode** - Visual menus for database and version selection
+- ✅ **Interactive Mode** - Visual menus with multi-select for databases and versions
+- ✅ **Multi-Version Support** - Create multiple versions of the same database simultaneously
+- ✅ **Batch Operations** - Select all containers option and confirm-all-at-once for destroy
 - ✅ **Health Checking** - Automatic readiness detection
 - ✅ **Resource Management** - Memory limits, CPU shares, tmpfs mounts
 - ✅ **CLI Interface** - Comprehensive command-line interface
 - ✅ **Progress Indicators** - Visual feedback for all operations
 - ✅ **Connection Strings** - Auto-generated connection info
 - ✅ **Port Management** - Auto-assignment or custom ports
-- ✅ **Container Tracking** - Labels for simDB-managed containers
+- ✅ **Container Tracking** - Labels for dbarena-managed containers
 
 ### Performance Targets
 
@@ -82,10 +89,10 @@ cargo build --release
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/simdb.git
-cd simdb
+git clone https://github.com/yourusername/dbarena.git
+cd dbarena
 cargo build --release
-./target/release/simdb --version
+./target/release/dbarena --version
 ```
 
 ### Requirements
@@ -95,6 +102,28 @@ cargo build --release
 
 ## Usage
 
+### Main Interactive Menu
+
+The easiest way to use dbarena is to run it without any command:
+
+```bash
+dbarena
+```
+
+This launches an interactive fuzzy-searchable menu where you can type to filter options or use arrow keys to navigate:
+
+- 🚀 Create - Create and start new database container(s)
+- 📋 List - List all containers
+- ▶  Start - Start a stopped container
+- ⏹  Stop - Stop a running container
+- 🔄 Restart - Restart a container
+- 🗑  Destroy - Remove container(s)
+- 🔍 Inspect - View container details
+- 📄 Logs - View container logs
+- ❌ Exit - Quit dbarena
+
+Simply select what you want to do, and dbarena will guide you through the rest!
+
 ### Creating Databases
 
 #### Interactive Mode
@@ -103,37 +132,39 @@ The easiest way to create databases is with interactive mode:
 
 ```bash
 # Launch interactive menu
-simdb create -i
+dbarena create -i
 ```
 
 This will guide you through:
 1. **Multi-select database types** - Choose PostgreSQL, MySQL, and/or SQL Server
-2. **Version selection** - Pick from common versions or specify a custom one
+2. **Multi-select versions** - Pick multiple versions of each database to create in parallel
 3. **Advanced options** (optional) - Configure memory limits, CPU shares, and persistence
 4. **Confirmation** - Review your selections before proceeding
+
+**Example**: Select PostgreSQL with versions 16, 15, and 14 to create three containers at once for version compatibility testing.
 
 #### Command-Line Mode
 
 ```bash
 # Create with defaults
-simdb create postgres
+dbarena create postgres
 
 # Specify version
-simdb create postgres --version 15
-simdb create mysql --version 8.0
-simdb create sqlserver --version 2022-latest
+dbarena create postgres --version 15
+dbarena create mysql --version 8.0
+dbarena create sqlserver --version 2022-latest
 
 # Custom name and port
-simdb create postgres --name my-test-db --port 5433
+dbarena create postgres --name my-test-db --port 5433
 
 # With resource limits
-simdb create postgres --memory 512 --cpu-shares 512
+dbarena create postgres --memory 512 --cpu-shares 512
 
 # Persistent storage (survives container restarts)
-simdb create postgres --persistent
+dbarena create postgres --persistent
 
 # Create multiple databases
-simdb create postgres mysql sqlserver
+dbarena create postgres mysql sqlserver
 ```
 
 ### Managing Containers
@@ -142,56 +173,61 @@ All management commands support interactive mode with `-i` flag:
 
 ```bash
 # List all running containers
-simdb list
+dbarena list
 
 # List all containers (including stopped)
-simdb list --all
+dbarena list --all
 
 # Start a stopped container
-simdb start my-db
-simdb start -i              # Interactive: select from stopped containers
+dbarena start my-db
+dbarena start -i              # Interactive: select from stopped containers
 
 # Stop a running container
-simdb stop my-db
-simdb stop -i               # Interactive: select from running containers
+dbarena stop my-db
+dbarena stop -i               # Interactive: select from running containers
 
 # Stop with custom timeout (default: 10s)
-simdb stop my-db --timeout 30
+dbarena stop my-db --timeout 30
 
 # Restart a container
-simdb restart my-db
-simdb restart -i            # Interactive: select from running containers
+dbarena restart my-db
+dbarena restart -i            # Interactive: select from running containers
 
 # Inspect container details
-simdb inspect my-db
-simdb inspect -i            # Interactive: select any container
+dbarena inspect my-db
+dbarena inspect -i            # Interactive: select any container
 
 # View logs
-simdb logs my-db
-simdb logs -i               # Interactive: select any container
+dbarena logs my-db
+dbarena logs -i               # Interactive: select any container
 
 # Follow logs (like docker logs -f)
-simdb logs my-db --follow
-simdb logs -i --follow      # Interactive with follow mode
+dbarena logs my-db --follow
+dbarena logs -i --follow      # Interactive with follow mode
 
 # Show last 50 lines
-simdb logs my-db --tail 50
+dbarena logs my-db --tail 50
 
 # Destroy a container
-simdb destroy my-db
-simdb destroy -i            # Interactive: multi-select containers to destroy
+dbarena destroy my-db
+dbarena destroy -i            # Interactive: select all or multi-select containers
 
 # Skip confirmation prompt
-simdb destroy my-db -y
-simdb destroy -i -y         # Interactive with auto-confirm
+dbarena destroy my-db -y
+dbarena destroy -i -y         # Interactive with auto-confirm all
 
 # Also remove volumes
-simdb destroy my-db -v
+dbarena destroy my-db -v
+
+# Interactive mode features:
+# - "Select all containers" option for quick cleanup
+# - "Confirm all deletions at once?" prompt for batch operations
+# - Individual confirmations if needed
 ```
 
 ### Connection Examples
 
-After creating a container, simDB displays connection strings:
+After creating a container, dbarena displays connection strings:
 
 **PostgreSQL:**
 ```bash
@@ -213,20 +249,23 @@ sqlcmd -S localhost,54323 -U sa -P 'YourStrong@Passw0rd'
 ### Logging
 
 ```bash
-# Default (info level)
-simdb create postgres
+# Default (warnings and errors only, clean output)
+dbarena create postgres
+
+# Info level (shows operation details)
+dbarena -v create postgres
 
 # Debug level
-simdb -v create postgres
+dbarena -vv create postgres
 
 # Trace level
-simdb -vv create postgres
+dbarena -vvv create postgres
 
 # Full debug (including Docker API)
-simdb -vvv create postgres
+dbarena -vvvv create postgres
 
 # Quiet mode (errors only)
-simdb -q create postgres
+dbarena -q create postgres
 ```
 
 ## Development
@@ -266,7 +305,7 @@ cargo fmt --all -- --check && cargo clippy -- -D warnings && cargo test
 ### Project Structure
 
 ```
-simdb/
+dbarena/
 ├── src/
 │   ├── main.rs              # CLI entry point
 │   ├── lib.rs               # Library exports
@@ -331,19 +370,19 @@ Error: Docker daemon not running or not accessible
 Error: Port 5432 is already in use
 ```
 
-**Solution:** Specify a different port with `--port` or let simDB auto-assign one.
+**Solution:** Specify a different port with `--port` or let dbarena auto-assign one.
 
 ### Container Won't Start
 
 ```bash
 # Check Docker logs
-simdb logs <container-name>
+dbarena logs <container-name>
 
 # Inspect container details
-simdb inspect <container-name>
+dbarena inspect <container-name>
 
 # Try verbose mode
-simdb -vvv start <container-name>
+dbarena -vvv start <container-name>
 ```
 
 ## License

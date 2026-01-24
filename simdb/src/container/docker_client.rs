@@ -1,7 +1,7 @@
-use crate::{Result, SimDbError};
-use bollard::Docker;
+use crate::{DBArenaError, Result};
 use bollard::image::{CreateImageOptions, ListImagesOptions};
 use bollard::models::ImageSummary;
+use bollard::Docker;
 use futures::StreamExt;
 use tracing::{debug, info};
 
@@ -11,8 +11,8 @@ pub struct DockerClient {
 
 impl DockerClient {
     pub fn new() -> Result<Self> {
-        let docker = Docker::connect_with_local_defaults()
-            .map_err(|_| SimDbError::DockerNotAvailable)?;
+        let docker =
+            Docker::connect_with_local_defaults().map_err(|_| DBArenaError::DockerNotAvailable)?;
         Ok(Self { docker })
     }
 
@@ -20,7 +20,7 @@ impl DockerClient {
         self.docker
             .ping()
             .await
-            .map_err(|_| SimDbError::DockerNotAvailable)?;
+            .map_err(|_| DBArenaError::DockerNotAvailable)?;
         Ok(())
     }
 
@@ -56,10 +56,10 @@ impl DockerClient {
                         debug!("Image pull: {}", status);
                     }
                     if let Some(error) = info.error {
-                        return Err(SimDbError::ImagePullFailed(error));
+                        return Err(DBArenaError::ImagePullFailed(error));
                     }
                 }
-                Err(e) => return Err(SimDbError::DockerError(e)),
+                Err(e) => return Err(DBArenaError::DockerError(e)),
             }
         }
 

@@ -1,7 +1,70 @@
 use crate::container::DatabaseType;
 use crate::Result;
 use console::style;
-use dialoguer::{theme::ColorfulTheme, MultiSelect, Select};
+use dialoguer::{theme::ColorfulTheme, FuzzySelect, MultiSelect, Select};
+
+#[derive(Debug, Clone)]
+pub enum MainMenuChoice {
+    Create,
+    List,
+    Start,
+    Stop,
+    Restart,
+    Destroy,
+    Inspect,
+    Logs,
+    Exit,
+}
+
+/// Show main menu when no command is specified
+pub fn show_main_menu() -> Result<MainMenuChoice> {
+    println!(
+        "\n{}",
+        style("DBArena - Database Simulation Environment")
+            .bold()
+            .cyan()
+    );
+    println!("{}", "─".repeat(60));
+    println!(
+        "{}",
+        style("Type to search, or use arrow keys to navigate").dim()
+    );
+    println!();
+
+    let choices = vec![
+        "🚀 Create - Create and start new database container(s)",
+        "📋 List - List all containers",
+        "▶  Start - Start a stopped container",
+        "⏹  Stop - Stop a running container",
+        "🔄 Restart - Restart a container",
+        "🗑  Destroy - Remove container(s)",
+        "🔍 Inspect - View container details",
+        "📄 Logs - View container logs",
+        "❌ Exit - Quit dbarena",
+    ];
+
+    let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a command")
+        .items(&choices)
+        .default(0)
+        .interact()
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
+
+    let choice = match selection {
+        0 => MainMenuChoice::Create,
+        1 => MainMenuChoice::List,
+        2 => MainMenuChoice::Start,
+        3 => MainMenuChoice::Stop,
+        4 => MainMenuChoice::Restart,
+        5 => MainMenuChoice::Destroy,
+        6 => MainMenuChoice::Inspect,
+        7 => MainMenuChoice::Logs,
+        8 => MainMenuChoice::Exit,
+        _ => unreachable!(),
+    };
+
+    Ok(choice)
+}
 
 #[derive(Debug)]
 pub struct DatabaseSelection {
@@ -11,7 +74,10 @@ pub struct DatabaseSelection {
 
 /// Interactive prompt to select databases and their versions
 pub fn select_databases() -> Result<Vec<DatabaseSelection>> {
-    println!("\n{}", style("Interactive Database Selection").bold().cyan());
+    println!(
+        "\n{}",
+        style("Interactive Database Selection").bold().cyan()
+    );
     println!("{}", "─".repeat(50));
 
     // Step 1: Select which databases to create
@@ -21,10 +87,10 @@ pub fn select_databases() -> Result<Vec<DatabaseSelection>> {
         .with_prompt("Select databases to create (use Space to select, Enter to confirm)")
         .items(&databases)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
 
     if selections.is_empty() {
-        return Err(crate::SimDbError::InvalidConfig(
+        return Err(crate::DBArenaError::InvalidConfig(
             "No databases selected".to_string(),
         ));
     }
@@ -56,13 +122,7 @@ pub fn select_databases() -> Result<Vec<DatabaseSelection>> {
                 // MySQL
                 (
                     DatabaseType::MySQL,
-                    vec![
-                        "8.0 (latest)",
-                        "8.4",
-                        "5.7",
-                        "5.6",
-                        "Custom version",
-                    ],
+                    vec!["8.0 (latest)", "8.4", "5.7", "5.6", "Custom version"],
                 )
             }
             2 => {
@@ -82,35 +142,50 @@ pub fn select_databases() -> Result<Vec<DatabaseSelection>> {
 
         println!("{}:", style(db_name).bold().green());
 
-        let version_idx = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("  Select version")
+        let version_selections = MultiSelect::with_theme(&ColorfulTheme::default())
+            .with_prompt("  Select versions (use Space to select, Enter to confirm)")
             .items(&versions)
-            .default(0)
             .interact()
-            .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+            .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
 
-        let version = if versions[version_idx].contains("Custom") {
-            // Prompt for custom version
-            let custom: String = dialoguer::Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("  Enter custom version")
-                .interact_text()
-                .map_err(|e| crate::SimDbError::Other(format!("Input failed: {}", e)))?;
-            custom
-        } else {
-            // Extract version number from selection (remove " (latest)" suffix)
-            versions[version_idx]
-                .split_whitespace()
-                .next()
-                .unwrap()
-                .to_string()
-        };
+        if version_selections.is_empty() {
+            println!(
+                "  {} No versions selected for {}, skipping",
+                style("⚠").yellow(),
+                db_name
+            );
+            continue;
+        }
 
-        println!("  {} {} {}", style("✓").green(), db_name, style(&version).dim());
+        for &version_idx in &version_selections {
+            let version = if versions[version_idx].contains("Custom") {
+                // Prompt for custom version
+                let custom: String = dialoguer::Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("  Enter custom version")
+                    .interact_text()
+                    .map_err(|e| crate::DBArenaError::Other(format!("Input failed: {}", e)))?;
+                custom
+            } else {
+                // Extract version number from selection (remove " (latest)" suffix)
+                versions[version_idx]
+                    .split_whitespace()
+                    .next()
+                    .unwrap()
+                    .to_string()
+            };
 
-        results.push(DatabaseSelection {
-            database: db_type,
-            version,
-        });
+            println!(
+                "  {} {} {}",
+                style("✓").green(),
+                db_name,
+                style(&version).dim()
+            );
+
+            results.push(DatabaseSelection {
+                database: db_type,
+                version,
+            });
+        }
     }
 
     println!();
@@ -131,10 +206,10 @@ pub fn select_databases() -> Result<Vec<DatabaseSelection>> {
         .with_prompt("Proceed with these selections?")
         .default(true)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Confirmation failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Confirmation failed: {}", e)))?;
 
     if !confirm {
-        return Err(crate::SimDbError::Other("Cancelled by user".to_string()));
+        return Err(crate::DBArenaError::Other("Cancelled by user".to_string()));
     }
 
     Ok(results)
@@ -146,7 +221,7 @@ pub fn prompt_advanced_options() -> Result<AdvancedOptions> {
         .with_prompt("Configure advanced options?")
         .default(false)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Prompt failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Prompt failed: {}", e)))?;
 
     if !configure_advanced {
         return Ok(AdvancedOptions::default());
@@ -161,33 +236,30 @@ pub fn prompt_advanced_options() -> Result<AdvancedOptions> {
         .with_prompt("Memory limit in MB (leave empty for no limit)")
         .allow_empty(true)
         .interact_text()
-        .map_err(|e| crate::SimDbError::Other(format!("Input failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Input failed: {}", e)))?;
 
-    let memory = if memory_input.is_empty() {
-        None
-    } else {
-        Some(
-            memory_input
-                .parse::<u64>()
-                .map_err(|_| crate::SimDbError::InvalidConfig("Invalid memory value".to_string()))?,
-        )
-    };
+    let memory =
+        if memory_input.is_empty() {
+            None
+        } else {
+            Some(memory_input.parse::<u64>().map_err(|_| {
+                crate::DBArenaError::InvalidConfig("Invalid memory value".to_string())
+            })?)
+        };
 
     // CPU shares
     let cpu_input: String = dialoguer::Input::with_theme(&ColorfulTheme::default())
         .with_prompt("CPU shares (leave empty for no limit)")
         .allow_empty(true)
         .interact_text()
-        .map_err(|e| crate::SimDbError::Other(format!("Input failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Input failed: {}", e)))?;
 
     let cpu_shares = if cpu_input.is_empty() {
         None
     } else {
-        Some(
-            cpu_input
-                .parse::<u64>()
-                .map_err(|_| crate::SimDbError::InvalidConfig("Invalid CPU shares value".to_string()))?,
-        )
+        Some(cpu_input.parse::<u64>().map_err(|_| {
+            crate::DBArenaError::InvalidConfig("Invalid CPU shares value".to_string())
+        })?)
     };
 
     // Persistent volume
@@ -195,7 +267,7 @@ pub fn prompt_advanced_options() -> Result<AdvancedOptions> {
         .with_prompt("Use persistent volume?")
         .default(false)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Prompt failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Prompt failed: {}", e)))?;
 
     println!();
 
@@ -214,15 +286,23 @@ pub struct AdvancedOptions {
 }
 
 /// Interactive container selection
-pub fn select_container(containers: Vec<crate::container::Container>, action: &str) -> Result<String> {
+pub fn select_container(
+    containers: Vec<crate::container::Container>,
+    action: &str,
+) -> Result<String> {
     if containers.is_empty() {
-        return Err(crate::SimDbError::Other(format!(
+        return Err(crate::DBArenaError::Other(format!(
             "No containers available to {}",
             action
         )));
     }
 
-    println!("\n{}", style(format!("Select container to {}", action)).bold().cyan());
+    println!(
+        "\n{}",
+        style(format!("Select container to {}", action))
+            .bold()
+            .cyan()
+    );
     println!("{}", "─".repeat(50));
 
     let items: Vec<String> = containers
@@ -241,7 +321,7 @@ pub fn select_container(containers: Vec<crate::container::Container>, action: &s
         .with_prompt("Container")
         .items(&items)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
 
     Ok(containers[selection].name.clone())
 }
@@ -252,15 +332,35 @@ pub fn select_containers(
     action: &str,
 ) -> Result<Vec<String>> {
     if containers.is_empty() {
-        return Err(crate::SimDbError::Other(format!(
+        return Err(crate::DBArenaError::Other(format!(
             "No containers available to {}",
             action
         )));
     }
 
-    println!("\n{}", style(format!("Select containers to {}", action)).bold().cyan());
+    println!(
+        "\n{}",
+        style(format!("Select containers to {}", action))
+            .bold()
+            .cyan()
+    );
     println!("{}", "─".repeat(50));
 
+    // Ask if user wants to select all
+    let select_all_choice = vec!["Select specific containers", "Select all containers"];
+    let choice = dialoguer::Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Selection mode")
+        .items(&select_all_choice)
+        .default(0)
+        .interact()
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
+
+    if choice == 1 {
+        // Select all
+        return Ok(containers.iter().map(|c| c.name.clone()).collect());
+    }
+
+    // Manual selection
     let items: Vec<String> = containers
         .iter()
         .map(|c| {
@@ -277,10 +377,12 @@ pub fn select_containers(
         .with_prompt("Containers (use Space to select, Enter to confirm)")
         .items(&items)
         .interact()
-        .map_err(|e| crate::SimDbError::Other(format!("Selection failed: {}", e)))?;
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
 
     if selections.is_empty() {
-        return Err(crate::SimDbError::Other("No containers selected".to_string()));
+        return Err(crate::DBArenaError::Other(
+            "No containers selected".to_string(),
+        ));
     }
 
     Ok(selections

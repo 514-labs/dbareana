@@ -1,6 +1,6 @@
-# Contributing to simDB
+# Contributing to dbarena
 
-Thank you for your interest in contributing to simDB! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to dbarena! This document provides guidelines and instructions for contributing.
 
 ## Getting Started
 
@@ -14,8 +14,8 @@ Thank you for your interest in contributing to simDB! This document provides gui
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/simdb.git
-cd simdb
+git clone https://github.com/yourusername/dbarena.git
+cd dbarena
 
 # Build the project
 cargo build
@@ -164,7 +164,7 @@ Example:
 /// # Example
 ///
 /// ```no_run
-/// use simdb::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
+/// use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -309,4 +309,4 @@ To add support for a new database:
 - Focus on constructive feedback
 - Help others learn and grow
 
-Thank you for contributing to simDB!
+Thank you for contributing to dbarena!

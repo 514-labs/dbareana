@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum SimDbError {
+pub enum DBArenaError {
     #[error("Docker daemon not running or not accessible")]
     DockerNotAvailable,
 
@@ -36,4 +36,4 @@ pub enum SimDbError {
     Other(String),
 }
 
-pub type Result<T> = std::result::Result<T, SimDbError>;
+pub type Result<T> = std::result::Result<T, DBArenaError>;

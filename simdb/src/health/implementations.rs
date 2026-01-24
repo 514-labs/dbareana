@@ -72,7 +72,7 @@ impl HealthChecker for MySQLHealthChecker {
             .create_exec(
                 container_id,
                 CreateExecOptions {
-                    cmd: Some(vec!["mysqladmin", "ping", "-h", "localhost", "-proot"]),
+                    cmd: Some(vec!["mysqladmin", "ping", "-h", "localhost", "-pmysql"]),
                     attach_stdout: Some(true),
                     attach_stderr: Some(true),
                     ..Default::default()

@@ -23,7 +23,7 @@ pub async fn handle_list(all: bool) -> Result<()> {
         println!("No containers found.");
         println!(
             "\nCreate a new container with: {}",
-            style("simdb create postgres").cyan()
+            style("dbarena create postgres").cyan()
         );
         return Ok(());
     }
@@ -34,8 +34,9 @@ pub async fn handle_list(all: bool) -> Result<()> {
         format!("{} running container(s)", containers.len())
     };
 
-    println!("\n{} {}",
-        style("SimDB Containers").bold().cyan(),
+    println!(
+        "\n{} {}",
+        style("DBArena Containers").bold().cyan(),
         style(format!("({})", count_text)).dim()
     );
     println!("{}", "─".repeat(80));

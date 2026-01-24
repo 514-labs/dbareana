@@ -9,7 +9,7 @@ use bollard::models::{ContainerSummary, HostConfig, PortBinding};
 use std::collections::HashMap;
 use tracing::{debug, info};
 
-const SIMDB_LABEL: &str = "simdb.managed";
+const DBARENA_LABEL: &str = "dbarena.managed";
 
 pub struct ContainerManager {
     client: DockerClient,
@@ -46,9 +46,10 @@ impl ContainerManager {
         // Build host config with resource limits
         let mut host_config = HostConfig {
             port_bindings: Some(port_bindings),
-            tmpfs: Some(HashMap::from([
-                ("/tmp".to_string(), "rw,noexec,nosuid,size=256m".to_string()),
-            ])),
+            tmpfs: Some(HashMap::from([(
+                "/tmp".to_string(),
+                "rw,noexec,nosuid,size=256m".to_string(),
+            )])),
             ..Default::default()
         };
 
@@ -62,9 +63,12 @@ impl ContainerManager {
 
         // Build labels
         let mut labels = HashMap::new();
-        labels.insert(SIMDB_LABEL.to_string(), "true".to_string());
-        labels.insert("simdb.database".to_string(), config.database.as_str().to_string());
-        labels.insert("simdb.version".to_string(), config.version.clone());
+        labels.insert(DBARENA_LABEL.to_string(), "true".to_string());
+        labels.insert(
+            "dbarena.database".to_string(),
+            config.database.as_str().to_string(),
+        );
+        labels.insert("dbarena.version".to_string(), config.version.clone());
 
         // Create container configuration
         let container_config = Config {
@@ -139,7 +143,7 @@ impl ContainerManager {
 
     pub async fn list_containers(&self, all: bool) -> Result<Vec<Container>> {
         let mut filters = HashMap::new();
-        filters.insert("label".to_string(), vec![format!("{}=true", SIMDB_LABEL)]);
+        filters.insert("label".to_string(), vec![format!("{}=true", DBARENA_LABEL)]);
 
         let options = ListContainersOptions {
             all,
@@ -149,7 +153,10 @@ impl ContainerManager {
 
         let containers = self.client.docker().list_containers(Some(options)).await?;
 
-        Ok(containers.into_iter().map(|c| self.convert_container(c)).collect())
+        Ok(containers
+            .into_iter()
+            .map(|c| self.convert_container(c))
+            .collect())
     }
 
     pub async fn find_container(&self, name_or_id: &str) -> Result<Option<Container>> {
@@ -164,7 +171,11 @@ impl ContainerManager {
             name.clone()
         } else {
             let random_suffix: String = rand::random::<u32>().to_string();
-            format!("simdb-{}-{}", config.database.as_str(), &random_suffix[..6])
+            format!(
+                "dbarena-{}-{}",
+                config.database.as_str(),
+                &random_suffix[..6]
+            )
         }
     }
 
@@ -202,11 +213,11 @@ impl ContainerManager {
 
         let labels = summary.labels.unwrap_or_default();
         let database_type = labels
-            .get("simdb.database")
+            .get("dbarena.database")
             .cloned()
             .unwrap_or_else(|| "unknown".to_string());
         let version = labels
-            .get("simdb.version")
+            .get("dbarena.version")
             .cloned()
             .unwrap_or_else(|| "unknown".to_string());
 
@@ -221,12 +232,7 @@ impl ContainerManager {
             .ports
             .as_ref()
             .and_then(|ports| ports.first())
-            .map(|p| {
-                (
-                    p.private_port as u16,
-                    p.public_port.map(|port| port as u16),
-                )
-            })
+            .map(|p| (p.private_port, p.public_port))
             .unwrap_or((0, None));
 
         Container {
@@ -255,10 +261,10 @@ mod tests {
 
         let config = ContainerConfig::new(DatabaseType::Postgres);
         let name = manager.generate_container_name(&config);
-        assert!(name.starts_with("simdb-postgres-"));
+        assert!(name.starts_with("dbarena-postgres-"));
 
-        let config_with_name = ContainerConfig::new(DatabaseType::MySQL)
-            .with_name("my-custom-name".to_string());
+        let config_with_name =
+            ContainerConfig::new(DatabaseType::MySQL).with_name("my-custom-name".to_string());
         let name = manager.generate_container_name(&config_with_name);
         assert_eq!(name, "my-custom-name");
     }

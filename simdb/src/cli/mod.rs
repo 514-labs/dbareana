@@ -4,7 +4,7 @@ pub mod interactive;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "simdb")]
+#[command(name = "dbarena")]
 #[command(version)]
 #[command(about = "Database Simulation Environment", long_about = None)]
 pub struct Cli {
@@ -21,7 +21,7 @@ pub struct Cli {
     pub json: bool,
 
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]

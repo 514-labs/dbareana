@@ -1,6 +1,6 @@
 use crate::cli::interactive;
 use crate::container::{ContainerManager, DockerClient};
-use crate::{Result, SimDbError};
+use crate::{DBArenaError, Result};
 use console::style;
 
 pub async fn handle_inspect(container: Option<String>, interactive_mode: bool) -> Result<()> {
@@ -16,7 +16,7 @@ pub async fn handle_inspect(container: Option<String>, interactive_mode: bool) -
         interactive::select_container(all_containers, "inspect")?
     } else {
         container.ok_or_else(|| {
-            SimDbError::InvalidConfig(
+            DBArenaError::InvalidConfig(
                 "Container name required. Use -i for interactive mode.".to_string(),
             )
         })?
@@ -26,7 +26,7 @@ pub async fn handle_inspect(container: Option<String>, interactive_mode: bool) -
     let found = manager
         .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+        .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
     println!("\n{}", style("Container Details").bold());
     println!("{}", "─".repeat(50));

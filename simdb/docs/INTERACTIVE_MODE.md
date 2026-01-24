@@ -1,11 +1,11 @@
 # Interactive Mode Guide
 
-simDB's interactive mode provides a user-friendly menu system for creating database containers without memorizing command-line flags.
+dbarena's interactive mode provides a user-friendly menu system for creating database containers without memorizing command-line flags.
 
 ## Quick Start
 
 ```bash
-simdb create -i
+dbarena create -i
 ```
 
 ## What You'll See
@@ -28,19 +28,26 @@ You can select **multiple databases** to create them all at once.
 
 ### Step 2: Version Selection (for each database)
 
-After selecting databases, you'll choose a version for each one:
+After selecting databases, you can choose **multiple versions** for each one:
 
 ```
 PostgreSQL:
-  Select version
-> 16 (latest)
-  15
-  14
-  13
-  12
-  11
-  Custom version
+  Select versions (use Space to select, Enter to confirm)
+  [ ] 16 (latest)
+  [ ] 15
+  [ ] 14
+  [ ] 13
+  [ ] 12
+  [ ] 11
+  [ ] Custom version
 ```
+
+Use **Space** to select multiple versions, then **Enter** to confirm.
+
+This allows you to create multiple versions of the same database in one go. For example:
+- Select PostgreSQL 16, 15, and 14 to test compatibility across versions
+- Select MySQL 8.0 and 5.7 to compare behavior
+- Create both old and new SQL Server versions for migration testing
 
 #### Available Versions
 
@@ -113,7 +120,7 @@ Review your selections and confirm. Press Enter to proceed or type 'n' to cancel
 ### Workflow 1: Quick PostgreSQL for Testing
 
 ```bash
-$ simdb create -i
+$ dbarena create -i
 
 # Select: PostgreSQL only
 # Version: 16 (latest)
@@ -126,7 +133,7 @@ Result: PostgreSQL 16 container running in ~5 seconds
 ### Workflow 2: Multi-Database Development Environment
 
 ```bash
-$ simdb create -i
+$ dbarena create -i
 
 # Select: PostgreSQL, MySQL, SQL Server (all three)
 # Versions: All latest
@@ -139,7 +146,7 @@ Result: Three database containers, all ready for development
 ### Workflow 3: Resource-Constrained Testing
 
 ```bash
-$ simdb create -i
+$ dbarena create -i
 
 # Select: PostgreSQL
 # Version: 15
@@ -155,7 +162,7 @@ Result: PostgreSQL 15 with limited resources, perfect for load testing
 ### Workflow 4: Custom Version
 
 ```bash
-$ simdb create -i
+$ dbarena create -i
 
 # Select: PostgreSQL
 # Version: Custom version
@@ -165,6 +172,41 @@ $ simdb create -i
 ```
 
 Result: Specific PostgreSQL version pulled from Docker Hub
+
+### Workflow 5: Multi-Version Testing
+
+```bash
+$ dbarena create -i
+
+# Select: PostgreSQL
+# Versions: Select 16, 15, 14 (use Space to select multiple)
+# Advanced: No
+# Confirm: Yes
+```
+
+Result: Three PostgreSQL containers (versions 16, 15, and 14) created in parallel
+
+This is perfect for:
+- Testing application compatibility across database versions
+- Migration testing (compare old vs new behavior)
+- Feature availability testing
+- Performance comparisons between versions
+
+### Workflow 6: Cross-Database Multi-Version Matrix
+
+```bash
+$ dbarena create -i
+
+# Select: PostgreSQL, MySQL (both)
+# PostgreSQL versions: 16, 15
+# MySQL versions: 8.0, 5.7
+# Advanced: No
+# Confirm: Yes
+```
+
+Result: Four containers created (postgres-16, postgres-15, mysql-8.0, mysql-5.7)
+
+Perfect for testing ORMs or libraries that support multiple databases and need comprehensive compatibility testing.
 
 ## Tips
 
@@ -200,7 +242,7 @@ When creating multiple databases:
 
 ### Interactive Mode
 ```bash
-simdb create -i
+dbarena create -i
 # Then make selections in menu
 ```
 
@@ -218,7 +260,7 @@ simdb create -i
 
 ### Command-Line Mode
 ```bash
-simdb create postgres --version 15 --memory 512
+dbarena create postgres --version 15 --memory 512
 ```
 
 **Pros:**
@@ -255,7 +297,7 @@ simdb create postgres --version 15 --memory 512
 
 **Solution:** Use command-line mode instead:
 ```bash
-simdb create postgres mysql sqlserver
+dbarena create postgres mysql sqlserver
 ```
 
 ### Advanced Options Not Showing
@@ -264,14 +306,14 @@ simdb create postgres mysql sqlserver
 
 **Solution:** Use command-line flags for advanced options:
 ```bash
-simdb create postgres -i --memory 512 --cpu-shares 512 --persistent
+dbarena create postgres -i --memory 512 --cpu-shares 512 --persistent
 ```
 
 ## Examples by Use Case
 
 ### Development
 ```bash
-simdb create -i
+dbarena create -i
 # Select: Your primary database
 # Version: Latest
 # Advanced: No
@@ -279,7 +321,7 @@ simdb create -i
 
 ### Testing
 ```bash
-simdb create -i
+dbarena create -i
 # Select: All databases you support
 # Versions: Match production
 # Advanced: Yes (set resource limits)
@@ -287,7 +329,7 @@ simdb create -i
 
 ### Learning
 ```bash
-simdb create -i
+dbarena create -i
 # Select: One database to explore
 # Version: Latest
 # Advanced: No (defaults are fine)
@@ -296,7 +338,7 @@ simdb create -i
 ### CI/CD Simulation
 ```bash
 # Use command-line mode for automation:
-simdb create postgres --version 15 --memory 256 --cpu-shares 256
+dbarena create postgres --version 15 --memory 256 --cpu-shares 256
 ```
 
 ## Next Steps
@@ -305,21 +347,21 @@ After creating containers with interactive mode:
 
 ```bash
 # List your containers
-simdb list
+dbarena list
 
 # View connection details
-simdb inspect <container-name>
+dbarena inspect <container-name>
 
 # Check logs
-simdb logs <container-name>
+dbarena logs <container-name>
 
 # Stop when done
-simdb stop <container-name>
+dbarena stop <container-name>
 
 # Destroy when finished
-simdb destroy <container-name>
+dbarena destroy <container-name>
 ```
 
 ## Feedback
 
-Interactive mode is designed to make simDB accessible to everyone. If you have suggestions for improving the experience, please open an issue!
+Interactive mode is designed to make dbarena accessible to everyone. If you have suggestions for improving the experience, please open an issue!

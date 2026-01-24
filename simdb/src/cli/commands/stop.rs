@@ -1,10 +1,14 @@
 use crate::cli::interactive;
-use crate::container::{ContainerManager, DockerClient};
 use crate::container::models::ContainerStatus;
-use crate::{Result, SimDbError};
+use crate::container::{ContainerManager, DockerClient};
+use crate::{DBArenaError, Result};
 use console::style;
 
-pub async fn handle_stop(container: Option<String>, interactive_mode: bool, timeout: u64) -> Result<()> {
+pub async fn handle_stop(
+    container: Option<String>,
+    interactive_mode: bool,
+    timeout: u64,
+) -> Result<()> {
     let docker_client = DockerClient::new()?;
     docker_client.verify_connection().await?;
 
@@ -16,13 +20,18 @@ pub async fn handle_stop(container: Option<String>, interactive_mode: bool, time
         let all_containers = manager.list_containers(false).await?;
         let running_containers: Vec<_> = all_containers
             .into_iter()
-            .filter(|c| matches!(c.status, ContainerStatus::Running | ContainerStatus::Healthy))
+            .filter(|c| {
+                matches!(
+                    c.status,
+                    ContainerStatus::Running | ContainerStatus::Healthy
+                )
+            })
             .collect();
 
         interactive::select_container(running_containers, "stop")?
     } else {
         container.ok_or_else(|| {
-            SimDbError::InvalidConfig(
+            DBArenaError::InvalidConfig(
                 "Container name required. Use -i for interactive mode.".to_string(),
             )
         })?
@@ -32,7 +41,7 @@ pub async fn handle_stop(container: Option<String>, interactive_mode: bool, time
     let found = manager
         .find_container(&container_name)
         .await?
-        .ok_or_else(|| SimDbError::ContainerNotFound(container_name.clone()))?;
+        .ok_or_else(|| DBArenaError::ContainerNotFound(container_name.clone()))?;
 
     println!(
         "{} Stopping container {}...",

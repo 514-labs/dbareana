@@ -4,7 +4,7 @@ mod implementations;
 pub use checker::HealthChecker;
 pub use implementations::{MySQLHealthChecker, PostgresHealthChecker, SQLServerHealthChecker};
 
-use crate::{Result, SimDbError};
+use crate::{DBArenaError, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
@@ -57,7 +57,7 @@ pub async fn wait_for_healthy(
 
         if start.elapsed() >= timeout {
             pb.finish_with_message("Timeout waiting for database");
-            return Err(SimDbError::HealthCheckTimeout(timeout.as_secs()));
+            return Err(DBArenaError::HealthCheckTimeout(timeout.as_secs()));
         }
 
         sleep(HEALTH_CHECK_INTERVAL).await;
