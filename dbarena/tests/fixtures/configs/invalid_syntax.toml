@@ -1,0 +1,2 @@
+[databases.postgres
+version = "16"  # Missing closing bracket

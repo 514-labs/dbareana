@@ -1,0 +1,4 @@
+[profiles.dev]
+database = "postgres"
+version = "16"
+# Missing required env section

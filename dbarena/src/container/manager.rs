@@ -186,21 +186,31 @@ impl ContainerManager {
     }
 
     fn build_env_vars(&self, config: &ContainerConfig) -> Vec<String> {
-        match config.database {
-            crate::container::DatabaseType::Postgres => vec![
-                "POSTGRES_PASSWORD=postgres".to_string(),
-                "POSTGRES_USER=postgres".to_string(),
-                "POSTGRES_DB=testdb".to_string(),
-            ],
-            crate::container::DatabaseType::MySQL => vec![
-                "MYSQL_ROOT_PASSWORD=mysql".to_string(),
-                "MYSQL_DATABASE=testdb".to_string(),
-            ],
-            crate::container::DatabaseType::SQLServer => vec![
-                "ACCEPT_EULA=Y".to_string(),
-                "SA_PASSWORD=YourStrong@Passw0rd".to_string(),
-            ],
-        }
+        // Start with default environment variables for the database type
+        let mut env_vars: HashMap<String, String> = match config.database {
+            crate::container::DatabaseType::Postgres => HashMap::from([
+                ("POSTGRES_PASSWORD".to_string(), "postgres".to_string()),
+                ("POSTGRES_USER".to_string(), "postgres".to_string()),
+                ("POSTGRES_DB".to_string(), "testdb".to_string()),
+            ]),
+            crate::container::DatabaseType::MySQL => HashMap::from([
+                ("MYSQL_ROOT_PASSWORD".to_string(), "mysql".to_string()),
+                ("MYSQL_DATABASE".to_string(), "testdb".to_string()),
+            ]),
+            crate::container::DatabaseType::SQLServer => HashMap::from([
+                ("ACCEPT_EULA".to_string(), "Y".to_string()),
+                ("SA_PASSWORD".to_string(), "YourStrong@Passw0rd".to_string()),
+            ]),
+        };
+
+        // Override with custom environment variables from config
+        env_vars.extend(config.env_vars.clone());
+
+        // Convert to Vec<String> format "KEY=VALUE"
+        env_vars
+            .into_iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect()
     }
 
     fn convert_container(&self, summary: ContainerSummary) -> Container {

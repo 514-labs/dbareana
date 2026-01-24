@@ -1,0 +1,8 @@
+[databases.postgres]
+version = "16"
+init_scripts = ["tests/fixtures/scripts/postgres_init.sql"]
+
+[databases.postgres.env]
+POSTGRES_DB = "testdb"
+POSTGRES_USER = "testuser"
+POSTGRES_PASSWORD = "testpass"

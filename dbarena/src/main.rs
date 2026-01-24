@@ -1,7 +1,7 @@
 use clap::Parser;
-use dbarena::cli::commands::{create, destroy, inspect, list, logs, start, stop};
+use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, start, stop};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
-use dbarena::cli::{Cli, Commands};
+use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -37,6 +37,16 @@ async fn main() -> anyhow::Result<()> {
                 persistent: false,
                 memory: None,
                 cpu_shares: None,
+                config: None,
+                profile: None,
+                env: vec![],
+                env_file: None,
+                init_script: vec![],
+                continue_on_error: false,
+                keep_on_error: false,
+                log_dir: None,
+                script_timeout: 30,
+                validate_only: false,
             },
             MainMenuChoice::List => Commands::List { all: false },
             MainMenuChoice::Start => Commands::Start {
@@ -86,6 +96,16 @@ async fn main() -> anyhow::Result<()> {
             persistent,
             memory,
             cpu_shares,
+            config,
+            profile,
+            env,
+            env_file,
+            init_script,
+            continue_on_error,
+            keep_on_error,
+            log_dir,
+            script_timeout,
+            validate_only,
         } => {
             create::handle_create(
                 databases,
@@ -96,6 +116,16 @@ async fn main() -> anyhow::Result<()> {
                 persistent,
                 memory,
                 cpu_shares,
+                config,
+                profile,
+                env,
+                env_file,
+                init_script,
+                continue_on_error,
+                keep_on_error,
+                log_dir,
+                script_timeout,
+                validate_only,
             )
             .await
         }
@@ -133,6 +163,30 @@ async fn main() -> anyhow::Result<()> {
             follow,
             tail,
         } => logs::handle_logs(container, interactive, follow, tail).await,
+        Commands::Config(config_cmd) => match config_cmd {
+            ConfigCommands::Validate {
+                config: config_path,
+                check_scripts,
+            } => config::handle_config_validate(config_path, check_scripts).await,
+            ConfigCommands::Show { config: config_path, profile } => {
+                config::handle_config_show(config_path, profile).await
+            }
+            ConfigCommands::Init => config::handle_config_init().await,
+        },
+        Commands::Init(init_command) => match init_command {
+            InitCommands::Test { script, container } => {
+                init_cmd::handle_init_test(script, container).await
+            }
+            InitCommands::Validate { script, database } => {
+                init_cmd::handle_init_validate(script, database).await
+            }
+        },
+        Commands::Exec {
+            container,
+            interactive,
+            script,
+            file,
+        } => exec::handle_exec(container, interactive, script, file).await,
     };
 
     if let Err(e) = result {

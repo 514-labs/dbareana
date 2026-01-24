@@ -1,0 +1,7 @@
+[databases.postgres]
+version = "16"
+
+[databases.postgres.env]
+POSTGRES_DB = "testdb"
+POSTGRES_USER = "testuser"
+POSTGRES_PASSWORD = "testpass"

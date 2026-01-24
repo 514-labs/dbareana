@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerConfig {
@@ -9,6 +11,15 @@ pub struct ContainerConfig {
     pub persistent: bool,
     pub memory_limit: Option<u64>,
     pub cpu_shares: Option<u64>,
+    /// Custom environment variables to set in the container
+    #[serde(default)]
+    pub env_vars: HashMap<String, String>,
+    /// Initialization scripts to run after container creation
+    #[serde(default)]
+    pub init_scripts: Vec<PathBuf>,
+    /// Continue creating container even if init scripts fail
+    #[serde(default)]
+    pub continue_on_error: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -80,6 +91,9 @@ impl ContainerConfig {
             persistent: false,
             memory_limit: None,
             cpu_shares: None,
+            env_vars: HashMap::new(),
+            init_scripts: Vec::new(),
+            continue_on_error: false,
         }
     }
 
@@ -110,6 +124,31 @@ impl ContainerConfig {
 
     pub fn with_cpu_shares(mut self, cpu_shares: u64) -> Self {
         self.cpu_shares = Some(cpu_shares);
+        self
+    }
+
+    pub fn with_env_vars(mut self, env_vars: HashMap<String, String>) -> Self {
+        self.env_vars = env_vars;
+        self
+    }
+
+    pub fn with_env_var(mut self, key: String, value: String) -> Self {
+        self.env_vars.insert(key, value);
+        self
+    }
+
+    pub fn with_init_scripts(mut self, scripts: Vec<PathBuf>) -> Self {
+        self.init_scripts = scripts;
+        self
+    }
+
+    pub fn with_init_script(mut self, script: PathBuf) -> Self {
+        self.init_scripts.push(script);
+        self
+    }
+
+    pub fn with_continue_on_error(mut self, continue_on_error: bool) -> Self {
+        self.continue_on_error = continue_on_error;
         self
     }
 }

@@ -58,6 +58,46 @@ pub enum Commands {
         /// CPU shares (relative weight)
         #[arg(long)]
         cpu_shares: Option<u64>,
+
+        /// Path to configuration file
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+
+        /// Environment profile to use
+        #[arg(long)]
+        profile: Option<String>,
+
+        /// Override environment variables (KEY=VALUE)
+        #[arg(long, value_name = "KEY=VALUE")]
+        env: Vec<String>,
+
+        /// Load environment variables from file
+        #[arg(long)]
+        env_file: Option<std::path::PathBuf>,
+
+        /// Initialization scripts to run (can be specified multiple times)
+        #[arg(long)]
+        init_script: Vec<std::path::PathBuf>,
+
+        /// Continue if initialization scripts fail
+        #[arg(long)]
+        continue_on_error: bool,
+
+        /// Keep container even if init scripts fail (default: destroy on failure)
+        #[arg(long)]
+        keep_on_error: bool,
+
+        /// Custom directory for saving init script logs
+        #[arg(long)]
+        log_dir: Option<std::path::PathBuf>,
+
+        /// Timeout for each init script (in seconds)
+        #[arg(long, default_value = "30")]
+        script_timeout: u64,
+
+        /// Validate config and scripts without creating container
+        #[arg(long)]
+        validate_only: bool,
     },
 
     /// Start a stopped container
@@ -145,5 +185,82 @@ pub enum Commands {
         /// Number of lines to show from the end
         #[arg(short, long)]
         tail: Option<usize>,
+    },
+
+    /// Configuration management commands
+    #[command(subcommand)]
+    Config(ConfigCommands),
+
+    /// Initialization script utilities
+    #[command(subcommand)]
+    Init(InitCommands),
+
+    /// Execute SQL on a running container
+    Exec {
+        /// Container name or ID
+        container: Option<String>,
+
+        /// Interactive mode - select container
+        #[arg(short, long)]
+        interactive: bool,
+
+        /// SQL script to execute
+        #[arg(short, long)]
+        script: Option<String>,
+
+        /// SQL file to execute
+        #[arg(short, long)]
+        file: Option<std::path::PathBuf>,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum ConfigCommands {
+    /// Validate configuration file
+    Validate {
+        /// Path to configuration file
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+
+        /// Also check that init script files exist
+        #[arg(long)]
+        check_scripts: bool,
+    },
+
+    /// Show loaded configuration
+    Show {
+        /// Path to configuration file
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+
+        /// Show resolved environment variables for a profile
+        #[arg(long)]
+        profile: Option<String>,
+    },
+
+    /// Initialize example configuration file
+    Init,
+}
+
+#[derive(clap::Subcommand)]
+pub enum InitCommands {
+    /// Test a script against a running container
+    Test {
+        /// Path to SQL script
+        script: std::path::PathBuf,
+
+        /// Container name or ID
+        #[arg(long)]
+        container: String,
+    },
+
+    /// Validate script syntax (basic check)
+    Validate {
+        /// Path to SQL script
+        script: std::path::PathBuf,
+
+        /// Database type (postgres, mysql, sqlserver)
+        #[arg(long)]
+        database: String,
     },
 }

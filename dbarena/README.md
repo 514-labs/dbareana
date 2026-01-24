@@ -4,7 +4,7 @@ A high-performance database simulation environment with Docker container managem
 
 ## Status
 
-✅ **v0.1.0 - Core Features Complete**
+✅ **v0.2.0 - Configuration Management Complete**
 
 ## Overview
 
@@ -58,12 +58,47 @@ cargo build --release
 
 # Show help
 ./target/release/dbarena --help
+
+# NEW in v0.2.0 - Configuration & Init Scripts:
+
+# Use environment profiles
+./target/release/dbarena create postgres --profile dev
+
+# Run initialization scripts
+./target/release/dbarena create postgres --init-script ./schema.sql
+
+# Override environment variables
+./target/release/dbarena create postgres --env POSTGRES_DB=myapp
+
+# Load from env file
+./target/release/dbarena create postgres --env-file .env.local
+
+# Use configuration file
+./target/release/dbarena create postgres --config ./dbarena.toml
+
+# Execute SQL on running container
+./target/release/dbarena exec --script "SELECT * FROM users;"
+
+# Execute SQL interactively
+./target/release/dbarena exec -i --file ./query.sql
 ```
 
 ## Features
 
-### v0.1.0 (Current)
+### v0.2.0 (Current)
 
+**NEW - Configuration Management:**
+- ✅ **Configuration Files** - TOML/YAML support for persistent settings
+- ✅ **Environment Profiles** - Named profiles for dev/test/prod environments
+- ✅ **Initialization Scripts** - Automatic SQL script execution on startup
+- ✅ **Environment Variable Management** - Custom env vars with precedence control
+- ✅ **Comprehensive Error Reporting** - Detailed script errors with line numbers and suggestions
+- ✅ **Log Management** - Automatic logging of init script execution
+- ✅ **SQL Execution** - Execute SQL scripts on running containers (inline or from file)
+- ✅ **Config Utilities** - Validate, show, and initialize configuration files
+- ✅ **Interactive Profile Selection** - Select profiles during interactive create
+
+**Core Features (v0.1.0):**
 - ✅ **Container Lifecycle Management** - Create, start, stop, restart, destroy
 - ✅ **Multi-Database Support** - PostgreSQL, MySQL, SQL Server
 - ✅ **Interactive Mode** - Visual menus with multi-select for databases and versions
@@ -166,6 +201,91 @@ dbarena create postgres --persistent
 # Create multiple databases
 dbarena create postgres mysql sqlserver
 ```
+
+### Configuration & Initialization (v0.2.0+)
+
+#### Configuration Files
+
+Create a `dbarena.toml` file in your project:
+
+```toml
+[databases.postgres.env]
+POSTGRES_USER = "myapp"
+POSTGRES_PASSWORD = "secret"
+POSTGRES_DB = "myapp"
+
+[databases.postgres]
+init_scripts = ["./schema.sql", "./seed.sql"]
+```
+
+Then simply:
+
+```bash
+dbarena create postgres
+# Uses config file automatically!
+```
+
+#### Environment Profiles
+
+Define profiles for different environments:
+
+```toml
+[profiles.dev]
+env = { LOG_LEVEL = "debug" }
+
+[databases.postgres.profiles.dev]
+env = { POSTGRES_DB = "myapp_dev" }
+
+[databases.postgres.profiles.prod]
+env = { POSTGRES_DB = "myapp_prod", POSTGRES_PASSWORD = "prod_secret" }
+```
+
+Use profiles:
+
+```bash
+dbarena create postgres --profile dev
+dbarena create postgres --profile prod
+```
+
+#### Initialization Scripts
+
+Automatically run SQL scripts on container creation:
+
+```bash
+# Single script
+dbarena create postgres --init-script ./setup.sql
+
+# Multiple scripts (run in order)
+dbarena create postgres \
+    --init-script ./schema.sql \
+    --init-script ./seed.sql
+
+# Or in config file
+[databases.postgres]
+init_scripts = ["./schema.sql", "./seed.sql"]
+```
+
+Scripts are executed after the database is healthy and output is logged to `~/.local/share/dbarena/logs/`.
+
+#### Environment Variables
+
+Override environment variables with precedence:
+
+```bash
+# CLI (highest priority)
+dbarena create postgres --env POSTGRES_DB=custom_db
+
+# From file
+dbarena create postgres --env-file .env.local
+
+# From config profile
+dbarena create postgres --profile dev
+
+# From config base
+# [databases.postgres.env] in dbarena.toml
+```
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for complete reference.
 
 ### Managing Containers
 
@@ -312,15 +432,35 @@ dbarena/
 │   ├── error.rs             # Error types
 │   ├── cli/
 │   │   ├── mod.rs           # CLI structure
+│   │   ├── interactive.rs   # Interactive mode
 │   │   └── commands/        # Command implementations
+│   ├── config/              # NEW v0.2.0
+│   │   ├── schema.rs        # Config data structures
+│   │   ├── loader.rs        # File loading
+│   │   ├── profile.rs       # Profile resolution
+│   │   ├── merger.rs        # Config merging
+│   │   └── validator.rs     # Validation
 │   ├── container/
 │   │   ├── config.rs        # Container configuration
 │   │   ├── docker_client.rs # Docker API client
 │   │   ├── manager.rs       # Container lifecycle
 │   │   └── models.rs        # Data models
-│   └── health/
-│       ├── checker.rs       # Health check trait
-│       └── implementations.rs # DB-specific checkers
+│   ├── health/
+│   │   ├── checker.rs       # Health check trait
+│   │   └── implementations.rs # DB-specific checkers
+│   └── init/                # NEW v0.2.0
+│       ├── copier.rs        # File copying to containers
+│       ├── executor.rs      # Script execution & error parsing
+│       └── logs.rs          # Log management
+├── examples/                # NEW v0.2.0
+│   ├── dbarena.toml         # Complete config example
+│   ├── dbarena-minimal.toml # Minimal config
+│   ├── profiles.toml        # Profile examples
+│   └── scripts/             # Example SQL scripts
+├── docs/                    # NEW v0.2.0
+│   ├── CONFIGURATION.md     # Config reference
+│   ├── INIT_SCRIPTS.md      # Init scripts guide
+│   └── MIGRATION_V0.2.md    # Migration guide
 ├── tests/
 │   ├── integration/         # Integration tests
 │   └── benchmarks/          # Performance benchmarks
@@ -339,10 +479,11 @@ Contributions are welcome! Please:
 
 ## Roadmap
 
-### v0.2.0 - Configuration Management
-- Configuration file support
-- Environment variable profiles
-- Custom database initialization scripts
+### v0.2.0 - Configuration Management ✅ COMPLETE
+- ✅ Configuration file support (TOML/YAML)
+- ✅ Environment variable profiles
+- ✅ Database initialization scripts with error reporting
+- ✅ Comprehensive logging and debugging tools
 
 ### v0.3.0 - Resource Monitoring
 - Real-time resource usage

@@ -1,0 +1,38 @@
+# Profile-Focused Configuration
+# Demonstrates using profiles for different environments
+
+[profiles.dev]
+env = { LOG_LEVEL = "debug", ENVIRONMENT = "development" }
+
+[profiles.staging]
+env = { LOG_LEVEL = "info", ENVIRONMENT = "staging" }
+
+[profiles.prod]
+env = { LOG_LEVEL = "error", ENVIRONMENT = "production" }
+
+# PostgreSQL with environment-specific settings
+[databases.postgres.profiles.dev]
+env = {
+    POSTGRES_DB = "myapp_dev",
+    POSTGRES_USER = "devuser",
+    POSTGRES_PASSWORD = "dev123"
+}
+
+[databases.postgres.profiles.staging]
+env = {
+    POSTGRES_DB = "myapp_staging",
+    POSTGRES_USER = "staginguser",
+    POSTGRES_PASSWORD = "staging456"
+}
+
+[databases.postgres.profiles.prod]
+env = {
+    POSTGRES_DB = "myapp_prod",
+    POSTGRES_USER = "produser",
+    POSTGRES_PASSWORD = "CHANGE_ME_IN_PRODUCTION"
+}
+
+# Usage:
+#   dbarena create postgres --profile dev
+#   dbarena create postgres --profile staging
+#   dbarena create postgres --profile prod

@@ -1,0 +1,9 @@
+# Minimal dbarena Configuration
+# Only configure what you need
+
+[databases.postgres.env]
+POSTGRES_DB = "myapp"
+POSTGRES_PASSWORD = "secret123"
+
+# Usage:
+#   dbarena create postgres

@@ -390,3 +390,44 @@ pub fn select_containers(
         .map(|idx| containers[idx].name.clone())
         .collect())
 }
+
+/// Interactive profile selection
+pub fn select_profile(config: &crate::config::DBArenaConfig, db_type: DatabaseType) -> Result<Option<String>> {
+    let profiles = crate::config::list_profiles(config, db_type);
+
+    if profiles.is_empty() {
+        return Ok(None);
+    }
+
+    println!(
+        "\n{}",
+        style("Environment Profile Selection").bold().cyan()
+    );
+    println!("{}", "─".repeat(50));
+
+    let use_profile = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Use an environment profile?")
+        .default(false)
+        .interact()
+        .map_err(|e| crate::DBArenaError::Other(format!("Prompt failed: {}", e)))?;
+
+    if !use_profile {
+        return Ok(None);
+    }
+
+    let mut choices = vec!["(No profile)"];
+    choices.extend(profiles.iter().map(|s| s.as_str()));
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select profile")
+        .items(&choices)
+        .default(0)
+        .interact()
+        .map_err(|e| crate::DBArenaError::Other(format!("Selection failed: {}", e)))?;
+
+    if selection == 0 {
+        Ok(None)
+    } else {
+        Ok(Some(profiles[selection - 1].clone()))
+    }
+}

@@ -32,6 +32,21 @@ pub enum DBArenaError {
     #[error("JSON error: {0}")]
     JsonError(#[from] serde_json::Error),
 
+    #[error("Configuration error: {0}")]
+    ConfigError(String),
+
+    #[error("Profile not found: {0}")]
+    ProfileNotFound(String),
+
+    #[error("Invalid environment variable: {0}")]
+    InvalidEnvVar(String),
+
+    #[error("Initialization script failed: {0}")]
+    InitScriptFailed(String),
+
+    #[error("Initialization script not found: {0}")]
+    InitScriptNotFound(String),
+
     #[error("{0}")]
     Other(String),
 }

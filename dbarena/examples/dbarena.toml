@@ -1,0 +1,75 @@
+# dbarena Configuration File - Complete Example
+# This file demonstrates all available configuration options
+
+# Global defaults applied to all containers
+[defaults]
+persistent = false      # Don't persist containers by default
+memory_mb = 512        # Default memory limit in MB
+cpu_shares = 1024      # Default CPU shares
+
+# Global environment profiles
+# These can be used across all database types
+[profiles.dev]
+env = { LOG_LEVEL = "debug", ENVIRONMENT = "development" }
+
+[profiles.test]
+env = { LOG_LEVEL = "info", ENVIRONMENT = "test" }
+
+[profiles.prod]
+env = { LOG_LEVEL = "error", ENVIRONMENT = "production" }
+
+# PostgreSQL Configuration
+[databases.postgres]
+default_version = "16"
+
+# Base environment variables for PostgreSQL
+[databases.postgres.env]
+POSTGRES_USER = "appuser"
+POSTGRES_PASSWORD = "dev123"
+POSTGRES_DB = "myapp"
+
+# PostgreSQL-specific profiles (override global profiles)
+[databases.postgres.profiles.dev]
+env = { POSTGRES_DB = "myapp_dev", POSTGRES_PASSWORD = "dev123" }
+
+[databases.postgres.profiles.test]
+env = { POSTGRES_DB = "myapp_test", POSTGRES_PASSWORD = "test456" }
+
+[databases.postgres.profiles.prod]
+env = { POSTGRES_DB = "myapp_prod", POSTGRES_PASSWORD = "prod_secret_here" }
+
+# MySQL Configuration
+[databases.mysql]
+default_version = "8.0"
+
+[databases.mysql.env]
+MYSQL_ROOT_PASSWORD = "mysql123"
+MYSQL_DATABASE = "myapp"
+
+[databases.mysql.profiles.dev]
+env = { MYSQL_DATABASE = "myapp_dev" }
+
+[databases.mysql.profiles.test]
+env = { MYSQL_DATABASE = "myapp_test" }
+
+# SQL Server Configuration
+[databases.sqlserver]
+default_version = "2022-latest"
+
+[databases.sqlserver.env]
+SA_PASSWORD = "YourStrong@Passw0rd123"
+ACCEPT_EULA = "Y"
+
+# Usage Examples:
+#
+# 1. Create with dev profile:
+#    dbarena create postgres --profile dev
+#
+# 2. Create with config file:
+#    dbarena create postgres --config ./dbarena.toml --profile dev
+#
+# 3. Override specific values:
+#    dbarena create postgres --profile dev --env POSTGRES_DB=custom_db
+#
+# 4. Use multiple databases:
+#    dbarena create postgres mysql --profile dev
