@@ -237,7 +237,7 @@ Coverage:       Comprehensive coverage of all new features
 
 ```bash
 # Update binary
-curl -sSL https://raw.githubusercontent.com/[username]/dbarena/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/install.sh | bash
 
 # Verify version
 dbarena --version
@@ -355,9 +355,9 @@ git log v0.2.1..v0.3.0
 
 ## 🔗 Links
 
-- **Repository**: https://github.com/[username]/dbarena
-- **Issues**: https://github.com/[username]/dbarena/issues
-- **Documentation**: https://github.com/[username]/dbarena/tree/main/docs
+- **Repository**: https://github.com/514-labs/dbareana
+- **Issues**: https://github.com/514-labs/dbareana/issues
+- **Documentation**: https://github.com/514-labs/dbareana/tree/main/docs
 
 ## 📄 License
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # dbarena installation script
-# Usage: curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/install.sh | bash
 
 set -e
 
@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 REPO="514-labs/dbareana"
-VERSION="${DBARENA_VERSION:-v0.2.1}"
+VERSION="${DBARENA_VERSION:-v0.3.0}"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY_NAME="dbarena"
 
