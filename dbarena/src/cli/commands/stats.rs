@@ -20,16 +20,16 @@ pub async fn handle_stats(
 ) -> Result<()> {
     let collector = DockerStatsCollector::new(docker.clone());
 
-    // Use default monitoring config interval (1 second)
+    // Use default monitoring config interval (500ms for responsive updates)
     // TODO: Load from config file when --config flag is added to stats command
     let monitoring_config = MonitoringConfig::default();
-    let interval_secs = monitoring_config.interval_seconds;
+    let interval_ms = monitoring_config.interval_ms;
 
     if all {
-        handle_stats_all(&collector, tui, json, interval_secs).await
+        handle_stats_all(&collector, tui, json, interval_ms).await
     } else {
         let container_id = get_container_id(container).await?;
-        handle_stats_single(&collector, &container_id, follow, tui, json, interval_secs).await
+        handle_stats_single(&collector, &container_id, follow, tui, json, interval_ms).await
     }
 }
 
@@ -80,11 +80,11 @@ async fn handle_stats_single(
     follow: bool,
     tui: bool,
     json: bool,
-    interval_secs: u64,
+    interval_ms: u64,
 ) -> Result<()> {
     if tui {
-        // Launch TUI with configurable interval
-        let mut tui_app = StatsTui::new(interval_secs)?;
+        // Launch TUI with configurable interval in milliseconds
+        let mut tui_app = StatsTui::new(interval_ms)?;
         tui_app.run_single(collector, container_id).await?;
     } else if follow {
         // Continuous text output
@@ -106,7 +106,7 @@ async fn handle_stats_single(
             }
 
             previous_metrics = Some(metrics);
-            sleep(Duration::from_secs(interval_secs)).await;
+            sleep(Duration::from_millis(interval_ms)).await;
         }
     } else {
         // One-time output
@@ -126,7 +126,7 @@ async fn handle_stats_all(
     collector: &DockerStatsCollector,
     tui: bool,
     json: bool,
-    _interval_secs: u64,
+    _interval_ms: u64,
 ) -> Result<()> {
     if tui {
         // TODO: Implement multi-container TUI dashboard

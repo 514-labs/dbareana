@@ -33,8 +33,8 @@ pub struct StatsTui {
 }
 
 impl StatsTui {
-    /// Create a new TUI instance with specified collection interval
-    pub fn new(collection_interval_secs: u64) -> Result<Self> {
+    /// Create a new TUI instance with specified collection interval in milliseconds
+    pub fn new(collection_interval_ms: u64) -> Result<Self> {
         enable_raw_mode()
             .map_err(|e| crate::error::DBArenaError::MonitoringError(format!("Failed to enable raw mode: {}", e)))?;
         let mut stdout = io::stdout();
@@ -49,7 +49,7 @@ impl StatsTui {
             metrics_history: VecDeque::with_capacity(HISTORY_SIZE),
             paused: false,
             show_help: false,
-            collection_interval: Duration::from_secs(collection_interval_secs),
+            collection_interval: Duration::from_millis(collection_interval_ms),
         })
     }
 

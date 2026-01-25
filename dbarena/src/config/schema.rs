@@ -113,9 +113,9 @@ pub struct MonitoringConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
 
-    /// Metrics collection interval in seconds
-    #[serde(default = "default_interval")]
-    pub interval_seconds: u64,
+    /// Metrics collection interval in milliseconds (default: 500ms for responsive TUI)
+    #[serde(default = "default_interval_ms")]
+    pub interval_ms: u64,
 
     /// CPU usage warning threshold (percentage)
     #[serde(default = "default_cpu_warning")]
@@ -130,7 +130,7 @@ impl Default for MonitoringConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            interval_seconds: 2,
+            interval_ms: 500,  // 500ms for responsive real-time updates
             cpu_warning_threshold: 75.0,
             memory_warning_threshold: 80.0,
         }
@@ -167,8 +167,8 @@ fn default_true() -> bool {
     true
 }
 
-fn default_interval() -> u64 {
-    1  // 1 second for responsive real-time monitoring
+fn default_interval_ms() -> u64 {
+    500  // 500ms for responsive real-time monitoring
 }
 
 fn default_cpu_warning() -> f64 {
