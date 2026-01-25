@@ -32,7 +32,7 @@ $ # Clean exit, terminal works normally
 ### Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 ### Manual Download
@@ -50,7 +50,7 @@ sudo mv dbarena /usr/local/bin/
 If you installed v0.2.0 using the install script, simply run the install script again:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 Or manually:

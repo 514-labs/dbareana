@@ -10,7 +10,7 @@
 Users can now install dbarena with a single command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 **Features:**
@@ -117,7 +117,7 @@ For unsupported platforms, the script provides instructions to build from source
 
 ```bash
 # Install latest version
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 
 # After installation
 dbarena --version
@@ -128,14 +128,14 @@ dbarena create postgres
 
 ```bash
 # Install to custom directory
-INSTALL_DIR="$HOME/.local/bin" curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+INSTALL_DIR="$HOME/.local/bin" curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 ### Specific Version
 
 ```bash
 # Install specific version
-DBARENA_VERSION=v0.2.0 curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+DBARENA_VERSION=v0.2.0 curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 ### Uninstall
@@ -187,7 +187,7 @@ sudo cp target/release/dbarena /usr/local/bin/
 **After:**
 ```bash
 # One command to install
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 
 # Use anywhere
 dbarena create postgres
@@ -207,7 +207,7 @@ The install script has been tested and verified:
 
 ```bash
 # Script is accessible
-✅ curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | head -10
+✅ curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | head -10
 
 # Script is executable
 ✅ chmod +x install.sh && ./install.sh
@@ -252,7 +252,7 @@ fa7bdef - Add installation scripts and update README
 ## Links
 
 - **Repository:** https://github.com/514-labs/dbareana
-- **Install Script:** https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh
+- **Install Script:** https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh
 - **Uninstall Script:** https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/uninstall.sh
 - **Latest Release:** https://github.com/514-labs/dbareana/releases/tag/v0.2.0
 

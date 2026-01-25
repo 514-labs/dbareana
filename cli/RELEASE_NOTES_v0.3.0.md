@@ -237,7 +237,7 @@ Coverage:       Comprehensive coverage of all new features
 
 ```bash
 # Update binary
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 
 # Verify version
 dbarena --version

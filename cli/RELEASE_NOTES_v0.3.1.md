@@ -137,7 +137,7 @@ Both sequential and parallel modes:
 ### Quick Install (Unix/Linux/macOS)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 ### Manual Installation

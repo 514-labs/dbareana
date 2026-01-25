@@ -96,7 +96,7 @@ Users can install v0.3.0 using:
 
 ```bash
 # Via install script
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 
 # Verify installation
 dbarena --version

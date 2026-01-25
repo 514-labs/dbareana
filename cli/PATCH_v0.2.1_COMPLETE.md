@@ -112,7 +112,7 @@ f0a6ad9 - Fix Ctrl+C signal handling - v0.2.1 patch release
 ### For New Users
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 The install script now defaults to v0.2.1.
@@ -122,7 +122,7 @@ The install script now defaults to v0.2.1.
 Simply run the install script again:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 Or manually:
@@ -246,7 +246,7 @@ Major features planned:
 - **Binary:** https://github.com/514-labs/dbareana/releases/download/v0.2.1/dbarena
 - **Checksum:** https://github.com/514-labs/dbareana/releases/download/v0.2.1/dbarena-v0.2.1-aarch64-apple-darwin.sha256
 - **Repository:** https://github.com/514-labs/dbareana
-- **Install Script:** https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh
+- **Install Script:** https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh
 
 ## Success Criteria - ALL MET ✅
 

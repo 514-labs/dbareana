@@ -22,7 +22,7 @@ dbarena provides instant database environments for testing, development, and exp
 Install dbarena with a single command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/dbarena/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/514-labs/dbareana/main/cli/install.sh | bash
 ```
 
 This will:
