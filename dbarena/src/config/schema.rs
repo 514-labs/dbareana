@@ -113,7 +113,9 @@ pub struct MonitoringConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
 
-    /// Metrics collection interval in milliseconds (default: 500ms for responsive TUI)
+    /// Metrics collection interval in milliseconds
+    /// Default: 1000ms (1 second) - Docker's stats update at ~1s intervals
+    /// Minimum recommended: 1000ms (faster intervals cause stale/inconsistent data)
     #[serde(default = "default_interval_ms")]
     pub interval_ms: u64,
 
@@ -130,7 +132,7 @@ impl Default for MonitoringConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            interval_ms: 500,  // 500ms for responsive real-time updates
+            interval_ms: 1000,  // 1s - matches Docker's internal stats update interval
             cpu_warning_threshold: 75.0,
             memory_warning_threshold: 80.0,
         }
@@ -168,7 +170,7 @@ fn default_true() -> bool {
 }
 
 fn default_interval_ms() -> u64 {
-    500  // 500ms for responsive real-time monitoring
+    1000  // 1000ms - Docker stats update at ~1s intervals, faster causes stale data
 }
 
 fn default_cpu_warning() -> f64 {

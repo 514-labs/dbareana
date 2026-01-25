@@ -44,12 +44,16 @@ impl StatsTui {
         let terminal = Terminal::new(backend)
             .map_err(|e| crate::error::DBArenaError::MonitoringError(format!("Failed to create terminal: {}", e)))?;
 
+        // Clamp interval to minimum 500ms to avoid stale Docker stats
+        // Docker's internal stats update at ~1s, faster polling causes inconsistent data
+        let safe_interval = collection_interval_ms.max(500);
+
         Ok(Self {
             terminal,
             metrics_history: VecDeque::with_capacity(HISTORY_SIZE),
             paused: false,
             show_help: false,
-            collection_interval: Duration::from_millis(collection_interval_ms),
+            collection_interval: Duration::from_millis(safe_interval),
         })
     }
 
