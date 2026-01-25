@@ -58,10 +58,13 @@ impl StatsTui {
         container_id: &str,
     ) -> Result<()> {
         let mut previous_metrics: Option<ContainerMetrics> = None;
+        let mut last_collection = tokio::time::Instant::now();
+        let collection_interval = Duration::from_secs(2);
 
         loop {
-            // Collect metrics if not paused
-            if !self.paused {
+            // Collect metrics if interval elapsed and not paused
+            let now = tokio::time::Instant::now();
+            if !self.paused && now.duration_since(last_collection) >= collection_interval {
                 match collector.collect(container_id).await {
                     Ok(mut metrics) => {
                         // Calculate rates if we have previous metrics
@@ -76,6 +79,8 @@ impl StatsTui {
                         while self.metrics_history.len() > HISTORY_SIZE {
                             self.metrics_history.pop_front();
                         }
+
+                        last_collection = now;
                     }
                     Err(e) => {
                         self.cleanup()?;
@@ -93,8 +98,8 @@ impl StatsTui {
                 .draw(|f| render_single_frame(f, metrics_history, paused, show_help))
                 .map_err(|e| crate::error::DBArenaError::MonitoringError(format!("Failed to draw: {}", e)))?;
 
-            // Handle input (with timeout)
-            if crossterm::event::poll(Duration::from_millis(500))
+            // Handle input with short timeout for responsive controls
+            if crossterm::event::poll(Duration::from_millis(100))
                 .map_err(|e| crate::error::DBArenaError::MonitoringError(format!("Event poll failed: {}", e)))?
             {
                 if let Event::Key(key) = event::read()
@@ -102,20 +107,30 @@ impl StatsTui {
                 {
                     match key.code {
                         KeyCode::Char('q') => break,
-                        KeyCode::Char('f') => self.paused = !self.paused,
+                        KeyCode::Char('f') => {
+                            self.paused = !self.paused;
+                            if !self.paused {
+                                // Reset timer when unpausing
+                                last_collection = tokio::time::Instant::now();
+                            }
+                        }
                         KeyCode::Char('r') => {
                             self.metrics_history.clear();
                             previous_metrics = None;
+                            last_collection = tokio::time::Instant::now();
                         }
                         KeyCode::Char('h') | KeyCode::Char('?') => self.show_help = !self.show_help,
+                        KeyCode::Esc => {
+                            if self.show_help {
+                                self.show_help = false;
+                            }
+                        }
                         _ => {}
                     }
                 }
-            }
-
-            // Sleep interval
-            if !self.paused {
-                tokio::time::sleep(Duration::from_secs(2)).await;
+            } else {
+                // Small sleep to prevent busy-waiting when no events
+                tokio::time::sleep(Duration::from_millis(50)).await;
             }
         }
 
