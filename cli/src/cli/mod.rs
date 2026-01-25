@@ -108,6 +108,10 @@ pub enum Commands {
         /// Interactive mode - select from stopped containers
         #[arg(short, long)]
         interactive: bool,
+
+        /// Start all stopped containers
+        #[arg(short, long)]
+        all: bool,
     },
 
     /// Stop a running container
@@ -118,6 +122,10 @@ pub enum Commands {
         /// Interactive mode - select from running containers
         #[arg(short, long)]
         interactive: bool,
+
+        /// Stop all running containers
+        #[arg(short, long)]
+        all: bool,
 
         /// Timeout in seconds before force kill
         #[arg(short, long, default_value = "10")]
@@ -142,6 +150,10 @@ pub enum Commands {
         /// Interactive mode - select containers to destroy
         #[arg(short, long)]
         interactive: bool,
+
+        /// Destroy all containers
+        #[arg(short, long)]
+        all: bool,
 
         /// Skip confirmation prompt
         #[arg(short = 'y', long)]
@@ -226,6 +238,10 @@ pub enum Commands {
         #[arg(long)]
         tui: bool,
 
+        /// Launch enhanced multi-pane TUI with database metrics and logs
+        #[arg(long)]
+        multipane: bool,
+
         /// Show stats for all running containers
         #[arg(short, long)]
         all: bool,
@@ -272,6 +288,14 @@ pub enum Commands {
     /// Volume management
     #[command(subcommand)]
     Volume(VolumeCommands),
+
+    /// Network management
+    #[command(subcommand)]
+    Network(NetworkCommands),
+
+    /// Container template management
+    #[command(subcommand)]
+    Template(TemplateCommands),
 }
 
 #[derive(clap::Subcommand)]
@@ -428,5 +452,142 @@ pub enum InitCommands {
         /// Database type (postgres, mysql, sqlserver)
         #[arg(long)]
         database: String,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum NetworkCommands {
+    /// Create a new network
+    Create {
+        /// Network name
+        name: String,
+
+        /// Network driver (bridge, host, none, or custom)
+        #[arg(short, long)]
+        driver: Option<String>,
+
+        /// Subnet in CIDR format (e.g., 172.20.0.0/16)
+        #[arg(long)]
+        subnet: Option<String>,
+
+        /// Gateway address (e.g., 172.20.0.1)
+        #[arg(long)]
+        gateway: Option<String>,
+
+        /// Create an internal network (no external connectivity)
+        #[arg(long)]
+        internal: bool,
+    },
+
+    /// List networks
+    List {
+        /// Show all networks (not just dbarena-managed)
+        #[arg(short, long)]
+        all: bool,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Inspect network details
+    Inspect {
+        /// Network name
+        name: String,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Delete a network
+    Delete {
+        /// Network name
+        name: String,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+
+    /// Connect a container to a network
+    Connect {
+        /// Network name
+        network: String,
+
+        /// Container name or ID
+        container: String,
+
+        /// Network aliases for the container
+        #[arg(long)]
+        alias: Vec<String>,
+    },
+
+    /// Disconnect a container from a network
+    Disconnect {
+        /// Network name
+        network: String,
+
+        /// Container name or ID
+        container: String,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum TemplateCommands {
+    /// Save a container as a template
+    Save {
+        /// Container name or ID
+        container: String,
+
+        /// Template name
+        #[arg(short, long)]
+        name: String,
+
+        /// Optional description
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+
+    /// List all templates
+    List {
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Delete a template
+    Delete {
+        /// Template name
+        name: String,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+
+    /// Export a template to a file
+    Export {
+        /// Template name
+        name: String,
+
+        /// Destination file path
+        path: std::path::PathBuf,
+    },
+
+    /// Import a template from a file
+    Import {
+        /// Source file path
+        path: std::path::PathBuf,
+    },
+
+    /// Inspect template details
+    Inspect {
+        /// Template name
+        name: String,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
     },
 }

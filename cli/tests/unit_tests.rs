@@ -5,4 +5,6 @@ mod unit {
     mod init_tests;
     mod monitoring_tests;
     mod tui_tests;
+    mod database_metrics_tests;
+    mod logs_tests;
 }

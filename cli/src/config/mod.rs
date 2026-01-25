@@ -31,10 +31,12 @@ pub mod loader;
 pub mod merger;
 pub mod profile;
 pub mod schema;
+pub mod template;
 pub mod validator;
 
 pub use loader::{find_config_file, load_config, load_config_from_string, load_or_default, ConfigFormat};
 pub use merger::{apply_cli_overrides, merge_configs, merge_env_vars};
 pub use profile::{get_database_env, list_profiles, resolve_profile};
 pub use schema::{DBArenaConfig, DatabaseConfig, DefaultsConfig, InitScript, ProfileConfig};
+pub use template::{Template, TemplateConfig, TemplateManager};
 pub use validator::{validate_config, validate_init_script_paths, ValidationResult};

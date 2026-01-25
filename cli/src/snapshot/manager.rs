@@ -31,7 +31,7 @@ impl SnapshotManager {
             .docker
             .inspect_container(container_id, None)
             .await
-            .map_err(|e| DBArenaError::ContainerNotFound(container_id.to_string()))?;
+            .map_err(|_e| DBArenaError::ContainerNotFound(container_id.to_string()))?;
 
         // Extract database type from labels
         let database_type = inspect

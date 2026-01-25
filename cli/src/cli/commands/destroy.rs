@@ -10,6 +10,7 @@ use std::time::Instant;
 pub async fn handle_destroy(
     container: Option<String>,
     interactive_mode: bool,
+    all: bool,
     yes: bool,
     volumes: bool,
 ) -> Result<()> {
@@ -19,7 +20,11 @@ pub async fn handle_destroy(
     let manager = ContainerManager::new(docker_client);
 
     // Get container names
-    let container_names = if interactive_mode {
+    let container_names = if all {
+        // Get all containers
+        let all_containers = manager.list_containers(true).await?;
+        all_containers.into_iter().map(|c| c.name).collect()
+    } else if interactive_mode {
         // List all containers for selection (multi-select)
         let all_containers = manager.list_containers(true).await?;
         interactive::select_containers(all_containers, "destroy")?

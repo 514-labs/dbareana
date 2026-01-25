@@ -257,6 +257,42 @@ impl ContainerManager {
             created_at: summary.created.unwrap_or(0),
         }
     }
+
+    // Bulk/Parallel Operations
+
+    /// Start multiple containers in parallel
+    pub async fn start_containers_parallel(&self, ids: Vec<String>) -> Vec<Result<()>> {
+        use futures::future::join_all;
+        let futures: Vec<_> = ids.iter().map(|id| {
+            let id = id.clone();
+            async move { self.start_container(&id).await }
+        }).collect();
+        join_all(futures).await
+    }
+
+    /// Stop multiple containers in parallel
+    pub async fn stop_containers_parallel(&self, ids: Vec<String>, timeout: u64) -> Vec<Result<()>> {
+        use futures::future::join_all;
+        let futures: Vec<_> = ids.iter().map(|id| {
+            let id = id.clone();
+            async move { self.stop_container(&id, Some(timeout)).await }
+        }).collect();
+        join_all(futures).await
+    }
+
+    /// Destroy multiple containers in parallel
+    pub async fn destroy_containers_parallel(
+        &self,
+        ids: Vec<String>,
+        remove_volumes: bool,
+    ) -> Vec<Result<()>> {
+        use futures::future::join_all;
+        let futures: Vec<_> = ids.iter().map(|id| {
+            let id = id.clone();
+            async move { self.destroy_container(&id, remove_volumes).await }
+        }).collect();
+        join_all(futures).await
+    }
 }
 
 #[cfg(test)]

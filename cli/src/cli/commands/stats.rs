@@ -7,6 +7,7 @@ use crate::container::models::ContainerStatus;
 use crate::error::Result;
 use crate::monitoring::{DockerStatsCollector, MetricsCollector, StatsTui};
 use crate::monitoring::{display_compact_header, display_metrics_compact, display_metrics_simple};
+use crate::database_metrics::DockerDatabaseMetricsCollector;
 use crate::config::schema::MonitoringConfig;
 
 /// Handle the stats command
@@ -15,6 +16,7 @@ pub async fn handle_stats(
     container: Option<String>,
     follow: bool,
     tui: bool,
+    multipane: bool,
     all: bool,
     json: bool,
 ) -> Result<()> {
@@ -24,6 +26,13 @@ pub async fn handle_stats(
     // TODO: Load from config file when --config flag is added to stats command
     let monitoring_config = MonitoringConfig::default();
     let interval_ms = monitoring_config.interval_ms;
+
+    // Multi-pane mode
+    if multipane {
+        let db_collector = DockerDatabaseMetricsCollector::new(docker.clone());
+        let mut tui_app = StatsTui::new(interval_ms)?;
+        return tui_app.run_multipane(&collector, &db_collector, container).await;
+    }
 
     if all {
         handle_stats_all(&collector, tui, json, interval_ms).await
@@ -126,13 +135,13 @@ async fn handle_stats_all(
     collector: &DockerStatsCollector,
     tui: bool,
     json: bool,
-    _interval_ms: u64,
+    interval_ms: u64,
 ) -> Result<()> {
     if tui {
-        // TODO: Implement multi-container TUI dashboard
-        return Err(crate::error::DBArenaError::Other(
-            "Multi-container TUI not yet implemented. Use without --tui flag for now.".to_string(),
-        ));
+        // Launch multi-container TUI dashboard
+        let mut tui_app = StatsTui::new(interval_ms)?;
+        tui_app.run_multi(collector).await?;
+        return Ok(());
     }
 
     if json {

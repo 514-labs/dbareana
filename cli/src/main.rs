@@ -1,7 +1,7 @@
 use clap::Parser;
-use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, query, snapshot, start, stats, stop, volume};
+use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, network, query, snapshot, start, stats, stop, template, volume};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
-use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, SnapshotCommands, VolumeCommands};
+use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, NetworkCommands, SnapshotCommands, TemplateCommands, VolumeCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -65,10 +65,12 @@ async fn run() -> anyhow::Result<()> {
             MainMenuChoice::Start => Commands::Start {
                 container: None,
                 interactive: true,
+                all: false,
             },
             MainMenuChoice::Stop => Commands::Stop {
                 container: None,
                 interactive: true,
+                all: false,
                 timeout: 10,
             },
             MainMenuChoice::Restart => Commands::Restart {
@@ -78,6 +80,7 @@ async fn run() -> anyhow::Result<()> {
             MainMenuChoice::Destroy => Commands::Destroy {
                 container: None,
                 interactive: true,
+                all: false,
                 yes: false,
                 volumes: false,
             },
@@ -145,26 +148,29 @@ async fn run() -> anyhow::Result<()> {
         Commands::Start {
             container,
             interactive,
-        } => start::handle_start(container, interactive).await,
+            all,
+        } => start::handle_start(container, interactive, all).await,
         Commands::Stop {
             container,
             interactive,
+            all,
             timeout,
-        } => stop::handle_stop(container, interactive, timeout).await,
+        } => stop::handle_stop(container, interactive, all, timeout).await,
         Commands::Restart {
             container,
             interactive,
         } => {
             // Restart is stop + start
-            stop::handle_stop(container.clone(), interactive, 10).await?;
-            start::handle_start(container, interactive).await
+            stop::handle_stop(container.clone(), interactive, false, 10).await?;
+            start::handle_start(container, interactive, false).await
         }
         Commands::Destroy {
             container,
             interactive,
+            all,
             yes,
             volumes,
-        } => destroy::handle_destroy(container, interactive, yes, volumes).await,
+        } => destroy::handle_destroy(container, interactive, all, yes, volumes).await,
         Commands::List { all } => list::handle_list(all).await,
         Commands::Inspect {
             container,
@@ -213,6 +219,7 @@ async fn run() -> anyhow::Result<()> {
             container,
             follow,
             tui,
+            multipane,
             all,
             json,
         } => {
@@ -223,7 +230,7 @@ async fn run() -> anyhow::Result<()> {
                 .map_err(|_| dbarena::error::DBArenaError::DockerNotAvailable)?;
             let docker = Arc::new(docker);
 
-            stats::handle_stats(docker, container, follow, tui, all, json).await
+            stats::handle_stats(docker, container, follow, tui, multipane, all, json).await
         }
         Commands::Snapshot(snapshot_cmd) => match snapshot_cmd {
             SnapshotCommands::Create { container, name, message } => {
@@ -254,6 +261,46 @@ async fn run() -> anyhow::Result<()> {
             }
             VolumeCommands::Inspect { name, json } => {
                 volume::handle_volume_inspect(name, json).await
+            }
+        },
+        Commands::Network(network_cmd) => match network_cmd {
+            NetworkCommands::Create { name, driver, subnet, gateway, internal } => {
+                network::handle_network_create(name, driver, subnet, gateway, internal).await
+            }
+            NetworkCommands::List { all, json } => {
+                network::handle_network_list(all, json).await
+            }
+            NetworkCommands::Inspect { name, json } => {
+                network::handle_network_inspect(name, json).await
+            }
+            NetworkCommands::Delete { name, yes } => {
+                network::handle_network_delete(name, yes).await
+            }
+            NetworkCommands::Connect { network: net, container, alias } => {
+                network::handle_network_connect(net, container, alias).await
+            }
+            NetworkCommands::Disconnect { network: net, container } => {
+                network::handle_network_disconnect(net, container).await
+            }
+        },
+        Commands::Template(template_cmd) => match template_cmd {
+            TemplateCommands::Save { container, name, description } => {
+                template::handle_template_save(container, name, description).await
+            }
+            TemplateCommands::List { json } => {
+                template::handle_template_list(json).await
+            }
+            TemplateCommands::Delete { name, yes } => {
+                template::handle_template_delete(name, yes).await
+            }
+            TemplateCommands::Export { name, path } => {
+                template::handle_template_export(name, path).await
+            }
+            TemplateCommands::Import { path } => {
+                template::handle_template_import(path).await
+            }
+            TemplateCommands::Inspect { name, json } => {
+                template::handle_template_inspect(name, json).await
             }
         },
     };

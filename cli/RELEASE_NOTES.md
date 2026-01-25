@@ -1,5 +1,40 @@
 # Release Notes
 
+## v0.4.0 - Monitoring Complete (2026-01-25)
+
+Major release completing the monitoring foundation with database-specific performance metrics and an enhanced multi-pane TUI dashboard.
+
+### Highlights
+- **Database Metrics**: Real-time monitoring of connections, QPS, TPS, transactions, cache hit ratios
+- **Multi-Pane TUI**: 4-pane dashboard with containers, resources, database metrics, and live logs
+- **Live Log Streaming**: Integrated log viewer with ANSI stripping
+- **Accurate Metrics**: Transaction-based QPS/TPS for realistic values
+- **26 New Tests**: Comprehensive accuracy and UI testing
+
+### New Features
+- Database metrics collection for PostgreSQL, MySQL, SQL Server
+- `--multipane` flag for enhanced TUI dashboard
+- Live container log streaming
+- Interactive pane navigation with Tab/Shift+Tab
+- Database-specific health metrics (connections, query rates, cache hits)
+- Rate calculation with delta counters
+
+### Bug Fixes
+- Fixed inflated QPS values (206 QPS → 1.25 QPS for idle databases)
+- Changed from row operation counting to transaction counting
+- First sample always returns 0 rates (proper baseline behavior)
+
+### Testing
+- 47 unit tests (all passing)
+- 26 new integration tests (all passing)
+- QPS/TPS accuracy verification
+- TUI rendering tests using ratatui TestBackend
+- Metrics accuracy tests with known workloads
+
+See [RELEASE_NOTES_v0.4.0.md](RELEASE_NOTES_v0.4.0.md) for complete details.
+
+---
+
 ## v0.2.0 - Configuration Management (2026-01-23)
 
 Major release adding configuration file support, environment profiles, and initialization scripts with comprehensive error reporting.
