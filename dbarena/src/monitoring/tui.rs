@@ -211,6 +211,8 @@ fn render_gauges(f: &mut Frame, area: Rect, metrics: &ContainerMetrics) {
             .split(area);
 
         // CPU gauge
+        // Clamp ratio to 0.0-1.0 for display, but show actual percentage in label
+        let cpu_ratio = (metrics.cpu.usage_percent / 100.0).min(1.0).max(0.0);
         let cpu_gauge = Gauge::default()
             .block(Block::default().title("CPU Usage").borders(Borders::ALL))
             .gauge_style(
@@ -223,7 +225,7 @@ fn render_gauges(f: &mut Frame, area: Rect, metrics: &ContainerMetrics) {
                         Color::Green
                     })
             )
-            .ratio(metrics.cpu.usage_percent / 100.0)
+            .ratio(cpu_ratio)
             .label(format!("{:.1}%", metrics.cpu.usage_percent));
         f.render_widget(cpu_gauge, chunks[0]);
 
@@ -251,15 +253,16 @@ fn render_gauges(f: &mut Frame, area: Rect, metrics: &ContainerMetrics) {
 }
 
 fn render_cpu_chart(f: &mut Frame, area: Rect, metrics_history: &VecDeque<ContainerMetrics>) {
+    // Clamp CPU values to 0-100 range for chart display
     let data: Vec<u64> = metrics_history
         .iter()
-        .map(|m| m.cpu.usage_percent as u64)
+        .map(|m| (m.cpu.usage_percent.min(100.0).max(0.0)) as u64)
         .collect();
 
     let sparkline = Sparkline::default()
         .block(
             Block::default()
-                .title("CPU History (60s)")
+                .title("CPU History (60s) - capped at 100% for display")
                 .borders(Borders::ALL)
         )
         .data(&data)
