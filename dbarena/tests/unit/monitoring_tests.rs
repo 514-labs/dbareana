@@ -8,6 +8,8 @@ fn test_cpu_metrics_creation() {
     let cpu = CpuMetrics {
         usage_percent: 45.5,
         num_cores: 4,
+        total_usage: None,
+        system_usage: None,
     };
 
     assert_eq!(cpu.usage_percent, 45.5);
@@ -36,6 +38,8 @@ fn test_metrics_rate_calculation() {
         cpu: CpuMetrics {
             usage_percent: 50.0,
             num_cores: 2,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024 * 1024 * 512,
@@ -63,6 +67,8 @@ fn test_metrics_rate_calculation() {
         cpu: CpuMetrics {
             usage_percent: 60.0,
             num_cores: 2,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024 * 1024 * 600,
@@ -103,6 +109,8 @@ fn test_rate_calculation_with_zero_time_delta() {
         cpu: CpuMetrics {
             usage_percent: 50.0,
             num_cores: 2,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024,
@@ -164,6 +172,8 @@ fn test_metrics_serialization() {
         cpu: CpuMetrics {
             usage_percent: 45.5,
             num_cores: 4,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024 * 1024 * 512,
@@ -207,6 +217,8 @@ fn test_network_counter_overflow_handling() {
         cpu: CpuMetrics {
             usage_percent: 50.0,
             num_cores: 2,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024,
@@ -234,6 +246,8 @@ fn test_network_counter_overflow_handling() {
         cpu: CpuMetrics {
             usage_percent: 50.0,
             num_cores: 2,
+            total_usage: None,
+            system_usage: None,
         },
         memory: MemoryMetrics {
             usage: 1024,

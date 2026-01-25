@@ -62,9 +62,11 @@ impl MetricsCollector for DockerStatsCollector {
             .map_err(|e| DBArenaError::MonitoringError(format!("Failed to get stats: {}", e)))?;
 
         // Parse CPU metrics
-        let cpu_delta = stats.cpu_stats.cpu_usage.total_usage as f64
+        let total_usage = stats.cpu_stats.cpu_usage.total_usage;
+        let system_usage = stats.cpu_stats.system_cpu_usage.unwrap_or(0);
+        let cpu_delta = total_usage as f64
             - stats.precpu_stats.cpu_usage.total_usage as f64;
-        let system_delta = stats.cpu_stats.system_cpu_usage.unwrap_or(0) as f64
+        let system_delta = system_usage as f64
             - stats.precpu_stats.system_cpu_usage.unwrap_or(0) as f64;
         let num_cpus = stats.cpu_stats.online_cpus.unwrap_or(
             stats.cpu_stats.cpu_usage.percpu_usage
@@ -115,6 +117,8 @@ impl MetricsCollector for DockerStatsCollector {
             cpu: CpuMetrics {
                 usage_percent: cpu_percent,
                 num_cores: num_cpus,
+                total_usage: Some(total_usage),
+                system_usage: Some(system_usage),
             },
             memory: MemoryMetrics {
                 usage: memory_usage,

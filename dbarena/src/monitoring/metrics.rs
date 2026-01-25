@@ -3,10 +3,16 @@ use serde::{Deserialize, Serialize};
 /// CPU usage metrics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CpuMetrics {
-    /// CPU usage percentage (0.0 - 100.0)
+    /// CPU usage percentage (0.0 - 100.0+, can exceed 100% on multi-core systems)
     pub usage_percent: f64,
     /// Number of CPU cores
     pub num_cores: u64,
+    /// Total CPU usage in nanoseconds (for delta calculation)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_usage: Option<u64>,
+    /// System CPU usage in nanoseconds (for delta calculation)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_usage: Option<u64>,
 }
 
 /// Memory usage metrics
@@ -73,6 +79,23 @@ impl ContainerMetrics {
             return;
         }
 
+        // Recalculate CPU percentage using our own deltas
+        if let (Some(current_cpu), Some(prev_cpu), Some(current_sys), Some(prev_sys)) = (
+            self.cpu.total_usage,
+            previous.cpu.total_usage,
+            self.cpu.system_usage,
+            previous.cpu.system_usage,
+        ) {
+            let cpu_delta = current_cpu.saturating_sub(prev_cpu) as f64;
+            let system_delta = current_sys.saturating_sub(prev_sys) as f64;
+
+            if system_delta > 0.0 && cpu_delta > 0.0 {
+                // Docker's formula: (cpu_delta / system_delta) * num_cpus * 100.0
+                // This gives percentage where 100% = 1 full core
+                self.cpu.usage_percent = (cpu_delta / system_delta) * self.cpu.num_cores as f64 * 100.0;
+            }
+        }
+
         // Calculate network rates
         let rx_delta = self.network.rx_bytes.saturating_sub(previous.network.rx_bytes) as f64;
         let tx_delta = self.network.tx_bytes.saturating_sub(previous.network.tx_bytes) as f64;
@@ -100,6 +123,8 @@ mod tests {
             cpu: CpuMetrics {
                 usage_percent: 50.0,
                 num_cores: 4,
+                total_usage: Some(1000000000),
+                system_usage: Some(10000000000),
             },
             memory: MemoryMetrics {
                 usage: 1024 * 1024 * 512,
@@ -127,6 +152,8 @@ mod tests {
             cpu: CpuMetrics {
                 usage_percent: 60.0,
                 num_cores: 4,
+                total_usage: Some(3000000000), // +2B ns = 2 seconds of CPU time
+                system_usage: Some(18000000000), // +8B ns = 8 seconds of system time (4 cores * 2s)
             },
             memory: MemoryMetrics {
                 usage: 1024 * 1024 * 600,
@@ -148,6 +175,12 @@ mod tests {
         };
 
         current.calculate_rates(&previous);
+
+        // CPU percentage should be recalculated
+        // cpu_delta = 3B - 1B = 2B ns (2 seconds)
+        // system_delta = 18B - 10B = 8B ns (8 seconds = 4 cores * 2s)
+        // cpu_percent = (2B / 8B) * 4 * 100 = 100%
+        assert_eq!(current.cpu.usage_percent, 100.0);
 
         // Network rates: delta / time
         assert_eq!(current.network.rx_rate, 1000.0); // 2000 / 2
