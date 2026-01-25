@@ -69,6 +69,8 @@ pub struct ContainerMetrics {
     pub network: NetworkMetrics,
     /// Block I/O metrics
     pub block_io: BlockIoMetrics,
+    /// Number of PIDs (processes/threads)
+    pub pids: u64,
 }
 
 impl ContainerMetrics {
@@ -143,6 +145,7 @@ mod tests {
                 read_rate: 0.0,
                 write_rate: 0.0,
             },
+            pids: 10,
         };
 
         let mut current = ContainerMetrics {
@@ -172,6 +175,7 @@ mod tests {
                 read_rate: 0.0,
                 write_rate: 0.0,
             },
+            pids: 12,
         };
 
         current.calculate_rates(&previous);

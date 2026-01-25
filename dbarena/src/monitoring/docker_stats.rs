@@ -110,6 +110,9 @@ impl MetricsCollector for DockerStatsCollector {
             })
             .unwrap_or((0, 0));
 
+        // Parse PIDs
+        let pids = stats.pids_stats.current.unwrap_or(0);
+
         Ok(ContainerMetrics {
             container_id: container_id.to_string(),
             container_name,
@@ -137,6 +140,7 @@ impl MetricsCollector for DockerStatsCollector {
                 read_rate: 0.0,
                 write_rate: 0.0,
             },
+            pids,
         })
     }
 

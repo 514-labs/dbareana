@@ -178,7 +178,7 @@ fn render_single_frame(
             Constraint::Length(5),  // Gauges
             Constraint::Length(8),  // CPU chart
             Constraint::Length(8),  // Memory chart
-            Constraint::Length(5),  // I/O stats
+            Constraint::Length(7),  // I/O stats (increased to show all 4 rows + PIDs)
             Constraint::Length(3),  // Footer
         ])
         .split(f.size());
@@ -322,19 +322,21 @@ fn render_io_stats(f: &mut Frame, area: Rect, metrics: &ContainerMetrics) {
         let block_read_rate = format_rate(metrics.block_io.read_rate);
         let block_write_bytes = format_bytes(metrics.block_io.write_bytes);
         let block_write_rate = format_rate(metrics.block_io.write_rate);
+        let pids_str = metrics.pids.to_string();
 
         let rows = vec![
             Row::new(vec!["Network RX", &net_rx_bytes, &net_rx_rate]),
             Row::new(vec!["Network TX", &net_tx_bytes, &net_tx_rate]),
-            Row::new(vec!["Block Read", &block_read_bytes, &block_read_rate]),
-            Row::new(vec!["Block Write", &block_write_bytes, &block_write_rate]),
+            Row::new(vec!["Disk Read", &block_read_bytes, &block_read_rate]),
+            Row::new(vec!["Disk Write", &block_write_bytes, &block_write_rate]),
+            Row::new(vec!["PIDs", &pids_str, ""]),
         ];
 
         let table = Table::new(
             rows,
             [Constraint::Length(15), Constraint::Length(15), Constraint::Length(15)],
         )
-        .block(Block::default().title("I/O Statistics").borders(Borders::ALL))
+        .block(Block::default().title("I/O & Process Statistics").borders(Borders::ALL))
         .header(Row::new(vec!["Type", "Total", "Rate"]).style(Style::default().fg(Color::Yellow)));
 
         f.render_widget(table, area);

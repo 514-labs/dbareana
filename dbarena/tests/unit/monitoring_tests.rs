@@ -58,6 +58,7 @@ fn test_metrics_rate_calculation() {
             read_rate: 0.0,
             write_rate: 0.0,
         },
+            pids: 0,
     };
 
     let mut current = ContainerMetrics {
@@ -87,6 +88,7 @@ fn test_metrics_rate_calculation() {
             read_rate: 0.0,
             write_rate: 0.0,
         },
+            pids: 0,
     };
 
     current.calculate_rates(&previous);
@@ -129,6 +131,7 @@ fn test_rate_calculation_with_zero_time_delta() {
             read_rate: 0.0,
             write_rate: 0.0,
         },
+            pids: 0,
     };
 
     let mut current = previous.clone();
@@ -192,6 +195,7 @@ fn test_metrics_serialization() {
             read_rate: 200.0,
             write_rate: 100.0,
         },
+            pids: 0,
     };
 
     // Test JSON serialization
@@ -237,6 +241,7 @@ fn test_network_counter_overflow_handling() {
             read_rate: 0.0,
             write_rate: 0.0,
         },
+            pids: 0,
     };
 
     let mut current = ContainerMetrics {
@@ -266,6 +271,7 @@ fn test_network_counter_overflow_handling() {
             read_rate: 0.0,
             write_rate: 0.0,
         },
+            pids: 0,
     };
 
     current.calculate_rates(&previous);
