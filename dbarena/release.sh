@@ -1,9 +1,9 @@
 #!/bin/bash
-# Release helper script for dbarena v0.2.0
+# Release helper script for dbarena v0.3.0
 
 set -e
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 TAG="v${VERSION}"
 
 echo "================================"
@@ -65,10 +65,11 @@ echo ""
 echo "================================"
 echo "Release Checklist:"
 echo "================================"
-echo "✓ Version 0.2.0 in Cargo.toml"
+echo "✓ Version 0.3.0 in Cargo.toml"
 echo "✓ Release binary built"
-echo "✓ Release notes written (RELEASE_NOTES_v0.2.0.md)"
-echo "✓ Manual tests passed (MANUAL_TEST_RESULTS.md)"
+echo "✓ Release notes written (RELEASE_NOTES_v0.3.0.md)"
+echo "✓ Smoke tests passed (SMOKE_TEST_RESULTS_v0.3.0.md)"
+echo "✓ Unit tests passed (80/80)"
 echo "✓ Documentation complete"
 echo ""
 
@@ -111,7 +112,7 @@ if [ $TAG_EXISTS -eq 0 ]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         # Create tag
         echo "Creating tag $TAG..."
-        git tag -a "$TAG" -m "Release v${VERSION} - Configuration Management"
+        git tag -a "$TAG" -m "Release v${VERSION} - Performance Monitoring, Snapshots, and Volumes"
         echo "✓ Tag created"
 
         # Push commits
@@ -132,8 +133,8 @@ if [ $TAG_EXISTS -eq 0 ]; then
         echo "Next steps:"
         echo "  1. Go to: https://github.com/[username]/dbarena/releases/new"
         echo "  2. Select tag: $TAG"
-        echo "  3. Title: dbarena v${VERSION} - Configuration Management"
-        echo "  4. Copy description from RELEASE_NOTES_v0.2.0.md"
+        echo "  3. Title: dbarena v${VERSION} - Performance Monitoring, Snapshots, and Volumes"
+        echo "  4. Copy description from RELEASE_NOTES_v0.3.0.md"
         echo "  5. Attach binary: target/release/dbarena"
         echo "  6. Publish release"
         echo ""
