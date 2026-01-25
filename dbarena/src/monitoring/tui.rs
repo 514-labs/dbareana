@@ -178,7 +178,7 @@ fn render_single_frame(
             Constraint::Length(5),  // Gauges
             Constraint::Length(8),  // CPU chart
             Constraint::Length(8),  // Memory chart
-            Constraint::Length(7),  // I/O stats (increased to show all 4 rows + PIDs)
+            Constraint::Length(8),  // I/O stats (5 data rows + header + borders)
             Constraint::Length(3),  // Footer
         ])
         .split(f.size());
