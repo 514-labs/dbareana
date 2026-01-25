@@ -7,6 +7,7 @@ pub mod init_cmd;
 pub mod inspect;
 pub mod list;
 pub mod logs;
+pub mod query;
 pub mod snapshot;
 pub mod start;
 pub mod stats;

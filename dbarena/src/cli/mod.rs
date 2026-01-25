@@ -196,7 +196,7 @@ pub enum Commands {
     Init(InitCommands),
 
     /// Execute SQL on a running container
-    Exec {
+    Query {
         /// Container name or ID
         container: Option<String>,
 
@@ -233,6 +233,36 @@ pub enum Commands {
         /// Output in JSON format
         #[arg(long)]
         json: bool,
+    },
+
+    /// Execute a command in one or more containers
+    Exec {
+        /// Container name(s) or ID(s) to execute command in
+        containers: Vec<String>,
+
+        /// Execute on all running containers
+        #[arg(short, long)]
+        all: bool,
+
+        /// Filter containers by name pattern (glob style: postgres-*)
+        #[arg(short, long)]
+        filter: Option<String>,
+
+        /// User to run command as
+        #[arg(short, long)]
+        user: Option<String>,
+
+        /// Working directory
+        #[arg(short, long)]
+        workdir: Option<String>,
+
+        /// Run command in parallel across containers (default: sequential)
+        #[arg(short, long)]
+        parallel: bool,
+
+        /// Command to execute (use -- to separate: dbarena exec <container> -- <command>)
+        #[arg(last = true)]
+        command: Vec<String>,
     },
 
     /// Container snapshot management

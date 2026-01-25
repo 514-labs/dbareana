@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 REPO="514-labs/dbareana"
-VERSION="${DBARENA_VERSION:-v0.3.0}"
+VERSION="${DBARENA_VERSION:-v0.3.1}"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY_NAME="dbarena"
 

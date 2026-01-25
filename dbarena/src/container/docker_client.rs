@@ -5,6 +5,7 @@ use bollard::Docker;
 use futures::StreamExt;
 use tracing::{debug, info};
 
+#[derive(Clone)]
 pub struct DockerClient {
     docker: Docker,
 }

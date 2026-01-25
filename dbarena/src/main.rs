@@ -1,5 +1,5 @@
 use clap::Parser;
-use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, snapshot, start, stats, stop, volume};
+use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, query, snapshot, start, stats, stop, volume};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
 use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, SnapshotCommands, VolumeCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -194,12 +194,21 @@ async fn run() -> anyhow::Result<()> {
                 init_cmd::handle_init_validate(script, database).await
             }
         },
-        Commands::Exec {
+        Commands::Query {
             container,
             interactive,
             script,
             file,
-        } => exec::handle_exec(container, interactive, script, file).await,
+        } => query::handle_query(container, interactive, script, file).await,
+        Commands::Exec {
+            containers,
+            all,
+            filter,
+            user,
+            workdir,
+            parallel,
+            command,
+        } => exec::handle_exec(containers, all, filter, user, workdir, parallel, command).await,
         Commands::Stats {
             container,
             follow,

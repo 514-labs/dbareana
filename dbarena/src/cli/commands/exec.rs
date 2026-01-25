@@ -1,195 +1,302 @@
-use crate::cli::interactive;
-use crate::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
-use crate::init::{execute_init_scripts, LogManager};
-use crate::Result;
+use crate::container::{ContainerManager, DockerClient};
+use crate::{DBArenaError, Result};
+use bollard::exec::{CreateExecOptions, StartExecResults};
 use console::style;
-use std::path::PathBuf;
+use futures::StreamExt;
+use std::io::Write;
 
-/// Handle `exec` command - execute SQL on a running container
 pub async fn handle_exec(
-    container: Option<String>,
-    interactive_mode: bool,
-    script: Option<String>,
-    file: Option<PathBuf>,
+    containers: Vec<String>,
+    all: bool,
+    filter: Option<String>,
+    user: Option<String>,
+    workdir: Option<String>,
+    parallel: bool,
+    command: Vec<String>,
 ) -> Result<()> {
-    // Validate that either script or file is provided
-    if script.is_none() && file.is_none() {
-        return Err(crate::DBArenaError::InvalidConfig(
-            "Either --script or --file must be provided".to_string(),
+    if command.is_empty() {
+        return Err(DBArenaError::InvalidConfig(
+            "Command is required. Use -- to separate container names from command.\nExample: dbarena exec postgres-1 -- echo hello".to_string(),
         ));
     }
 
-    if script.is_some() && file.is_some() {
-        return Err(crate::DBArenaError::InvalidConfig(
-            "Cannot specify both --script and --file".to_string(),
-        ));
-    }
-
-    // Connect to Docker
     let docker_client = DockerClient::new()?;
     docker_client.verify_connection().await?;
 
-    let manager = ContainerManager::new(docker_client);
+    let manager = ContainerManager::new(docker_client.clone());
 
-    // Get container (interactive or specified)
-    let container_name = if interactive_mode || container.is_none() {
-        // List all running containers
-        let containers = manager.list_containers(false).await?;
+    // Resolve target containers
+    let target_containers = get_target_containers(&manager, containers, all, filter).await?;
 
-        if containers.is_empty() {
-            return Err(crate::DBArenaError::Other(
-                "No running containers found".to_string(),
-            ));
-        }
-
-        interactive::select_container(containers, "execute SQL on")?
-    } else {
-        container.unwrap()
-    };
-
-    // Find container info
-    let container_info = manager
-        .find_container(&container_name)
-        .await?
-        .ok_or_else(|| {
-            crate::DBArenaError::ContainerNotFound(format!(
-                "Container not found: {}",
-                container_name
-            ))
-        })?;
-
-    // Create a new Docker client for script execution
-    let docker_for_exec = DockerClient::new()?;
-
-    // Determine database type
-    let db_type = DatabaseType::from_string(&container_info.database_type).ok_or_else(|| {
-        crate::DBArenaError::Other(format!(
-            "Unknown database type: {}",
-            container_info.database_type
-        ))
-    })?;
+    if target_containers.is_empty() {
+        return Err(DBArenaError::InvalidConfig(
+            "No containers found matching the criteria".to_string(),
+        ));
+    }
 
     println!(
-        "\n{}",
-        style("Execute SQL on Container").bold().cyan()
-    );
-    println!("{}", "─".repeat(60));
-    println!("Container: {}", style(&container_info.name).cyan());
-    println!(
-        "Database: {} ({})",
-        style(&container_info.database_type).green(),
-        container_info.version
+        "{} Executing command on {} container(s): {}",
+        style("→").cyan(),
+        style(target_containers.len()).bold(),
+        style(command.join(" ")).yellow()
     );
     println!();
 
-    // Prepare script
-    let (script_path, is_temp) = if let Some(inline_script) = script {
-        // Create temporary file for inline script
-        let temp_dir = std::env::temp_dir();
-        let temp_file = temp_dir.join(format!("dbarena-exec-{}.sql", uuid::Uuid::new_v4()));
-
-        std::fs::write(&temp_file, inline_script)?;
-
-        println!("{}", style("Executing inline SQL...").cyan());
-        println!();
-        (temp_file, true)
-    } else if let Some(file_path) = file {
-        // Use provided file
-        if !file_path.exists() {
-            return Err(crate::DBArenaError::InitScriptNotFound(format!(
-                "Script file not found: {}",
-                file_path.display()
-            )));
-        }
-
-        println!(
-            "{}",
-            style(format!("Executing script: {}", file_path.display())).cyan()
-        );
-        println!();
-        (file_path, false)
+    if parallel && target_containers.len() > 1 {
+        execute_parallel(&docker_client, &target_containers, &command, user.as_deref(), workdir.as_deref()).await
     } else {
-        unreachable!()
-    };
+        execute_sequential(&docker_client, &target_containers, &command, user.as_deref(), workdir.as_deref()).await
+    }
+}
 
-    // Create a temporary container config (we need this for env vars)
-    let config = ContainerConfig::new(db_type)
-        .with_version(container_info.version.clone())
-        .with_init_scripts(vec![script_path.clone()]);
+async fn get_target_containers(
+    manager: &ContainerManager,
+    containers: Vec<String>,
+    all: bool,
+    filter: Option<String>,
+) -> Result<Vec<(String, String)>> {
+    let all_containers = manager.list_containers(false).await?;
 
-    // Execute script
-    let log_manager = LogManager::new(None)?;
+    if all {
+        // Get all running containers
+        Ok(all_containers
+            .into_iter()
+            .map(|c| (c.id, c.name))
+            .collect())
+    } else if let Some(pattern) = filter {
+        // Filter by glob pattern
+        let pattern = glob::Pattern::new(&pattern)
+            .map_err(|e| DBArenaError::InvalidConfig(format!("Invalid pattern: {}", e)))?;
 
-    let start = std::time::Instant::now();
+        Ok(all_containers
+            .into_iter()
+            .filter(|c| pattern.matches(&c.name))
+            .map(|c| (c.id, c.name))
+            .collect())
+    } else if !containers.is_empty() {
+        // Resolve specific container names/IDs
+        let mut resolved = Vec::new();
+        for name_or_id in containers {
+            let container = manager
+                .find_container(&name_or_id)
+                .await?
+                .ok_or_else(|| DBArenaError::ContainerNotFound(name_or_id.clone()))?;
+            resolved.push((container.id, container.name));
+        }
+        Ok(resolved)
+    } else {
+        Err(DBArenaError::InvalidConfig(
+            "Must specify containers, --all, or --filter".to_string(),
+        ))
+    }
+}
 
-    let results = execute_init_scripts(
-        docker_for_exec.docker(),
-        &container_info.id,
-        vec![script_path.clone()],
-        db_type,
-        &config,
-        false, // Don't continue on error
-        &log_manager,
-    )
-    .await;
+async fn execute_sequential(
+    docker_client: &DockerClient,
+    containers: &[(String, String)],
+    command: &[String],
+    user: Option<&str>,
+    workdir: Option<&str>,
+) -> Result<()> {
+    let mut successes = Vec::new();
+    let mut failures = Vec::new();
 
-    // Clean up temp file if it was created
-    if is_temp {
-        let _ = std::fs::remove_file(&script_path);
+    for (id, name) in containers {
+        println!("{} {}", style("Container:").cyan(), style(name).bold());
+        match execute_single(docker_client, id, command, user, workdir).await {
+            Ok(exit_code) => {
+                if exit_code == 0 {
+                    println!("  {} Exit code: {}\n", style("✓").green(), exit_code);
+                    successes.push(name.clone());
+                } else {
+                    println!("  {} Exit code: {}\n", style("✗").red(), exit_code);
+                    failures.push((name.clone(), format!("Exit code: {}", exit_code)));
+                }
+            }
+            Err(e) => {
+                eprintln!("  {} Error: {}\n", style("✗").red(), e);
+                failures.push((name.clone(), e.to_string()));
+            }
+        }
     }
 
-    let results = results?;
-    let duration = start.elapsed();
+    print_summary(&successes, &failures)?;
+    Ok(())
+}
 
-    // Display results
-    if let Some(result) = results.first() {
-        if result.success {
-            println!(
-                "{} Script executed successfully",
-                style("✓").green().bold()
-            );
-            println!("  Duration: {:.2}s", duration.as_secs_f64());
-            println!("  Statements: {}", result.statements_executed);
+async fn execute_parallel(
+    docker_client: &DockerClient,
+    containers: &[(String, String)],
+    command: &[String],
+    user: Option<&str>,
+    workdir: Option<&str>,
+) -> Result<()> {
+    use futures::future::join_all;
 
-            if !result.output.is_empty() {
-                println!();
-                println!("{}", style("Output:").bold());
-                println!("{}", "─".repeat(60));
-                println!("{}", result.output);
-                println!("{}", "─".repeat(60));
+    let futures: Vec<_> = containers
+        .iter()
+        .map(|(id, name)| {
+            let docker = docker_client.clone();
+            let id = id.clone();
+            let name = name.clone();
+            let cmd = command.to_vec();
+            let user = user.map(|s| s.to_string());
+            let workdir = workdir.map(|s| s.to_string());
+
+            async move {
+                let result = execute_single(
+                    &docker,
+                    &id,
+                    &cmd,
+                    user.as_deref(),
+                    workdir.as_deref(),
+                )
+                .await;
+                (name, result)
             }
-        } else {
-            println!(
-                "{} Script execution failed",
-                style("✗").red().bold()
-            );
-            println!("  Duration: {:.2}s", duration.as_secs_f64());
+        })
+        .collect();
 
-            if let Some(error) = &result.error {
-                println!();
-                println!("{}", style("Error Details:").red().bold());
-                println!("{}", "─".repeat(60));
-                println!("{}", error);
-                println!("{}", "─".repeat(60));
+    let results = join_all(futures).await;
+
+    let mut successes = Vec::new();
+    let mut failures = Vec::new();
+
+    for (name, result) in results {
+        println!("{} {}", style("Container:").cyan(), style(&name).bold());
+        match result {
+            Ok(exit_code) => {
+                if exit_code == 0 {
+                    println!("  {} Exit code: {}\n", style("✓").green(), exit_code);
+                    successes.push(name);
+                } else {
+                    println!("  {} Exit code: {}\n", style("✗").red(), exit_code);
+                    failures.push((name, format!("Exit code: {}", exit_code)));
+                }
             }
+            Err(e) => {
+                eprintln!("  {} Error: {}\n", style("✗").red(), e);
+                failures.push((name, e.to_string()));
+            }
+        }
+    }
 
-            return Err(crate::DBArenaError::InitScriptFailed(
-                "Script execution failed".to_string(),
+    print_summary(&successes, &failures)?;
+    Ok(())
+}
+
+fn print_summary(successes: &[String], failures: &[(String, String)]) -> Result<()> {
+    let total = successes.len() + failures.len();
+
+    // Only show summary if executing on multiple containers
+    if total <= 1 {
+        return Ok(());
+    }
+
+    println!("{}", "─".repeat(80));
+    println!("{}", style("Execution Summary").bold());
+    println!("{}", "─".repeat(80));
+
+    if !successes.is_empty() {
+        println!("{} {} container(s) succeeded:", style("✓").green(), successes.len());
+        for name in successes {
+            println!("  • {}", style(name).green());
+        }
+        println!();
+    }
+
+    if !failures.is_empty() {
+        println!("{} {} container(s) failed:", style("✗").red(), failures.len());
+        for (name, error) in failures {
+            println!("  • {} - {}", style(name).red(), style(error).dim());
+        }
+        println!();
+    }
+
+    println!("{}/{} successful",
+        style(successes.len()).bold(),
+        style(total).bold()
+    );
+
+    // Return error if any failures occurred
+    if !failures.is_empty() {
+        return Err(DBArenaError::ContainerOperationFailed(
+            format!("{} container(s) failed to execute command", failures.len())
+        ));
+    }
+
+    Ok(())
+}
+
+async fn execute_single(
+    docker_client: &DockerClient,
+    container_id: &str,
+    command: &[String],
+    user: Option<&str>,
+    workdir: Option<&str>,
+) -> Result<i64> {
+    let docker = docker_client.docker();
+
+    // Create exec instance
+    let exec_config = CreateExecOptions {
+        attach_stdout: Some(true),
+        attach_stderr: Some(true),
+        cmd: Some(command.to_vec()),
+        user: user.map(|s| s.to_string()),
+        working_dir: workdir.map(|s| s.to_string()),
+        ..Default::default()
+    };
+
+    let exec = docker
+        .create_exec(container_id, exec_config)
+        .await
+        .map_err(|e| DBArenaError::ContainerOperationFailed(format!("Failed to create exec: {}", e)))?;
+
+    // Start exec and capture output
+    let start_exec = docker
+        .start_exec(&exec.id, None)
+        .await
+        .map_err(|e| DBArenaError::ContainerOperationFailed(format!("Failed to start exec: {}", e)))?;
+
+    match start_exec {
+        StartExecResults::Attached { mut output, .. } => {
+            // Stream output
+            while let Some(chunk) = output.next().await {
+                match chunk {
+                    Ok(bollard::container::LogOutput::StdOut { message }) => {
+                        std::io::stdout().write_all(&message)?;
+                        std::io::stdout().flush()?;
+                    }
+                    Ok(bollard::container::LogOutput::StdErr { message }) => {
+                        std::io::stderr().write_all(&message)?;
+                        std::io::stderr().flush()?;
+                    }
+                    Ok(bollard::container::LogOutput::Console { message }) => {
+                        std::io::stdout().write_all(&message)?;
+                        std::io::stdout().flush()?;
+                    }
+                    Ok(bollard::container::LogOutput::StdIn { .. }) => {}
+                    Err(e) => {
+                        return Err(DBArenaError::ContainerOperationFailed(format!(
+                            "Error reading output: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+        }
+        StartExecResults::Detached => {
+            return Err(DBArenaError::ContainerOperationFailed(
+                "Unexpected detached exec".to_string(),
             ));
         }
     }
 
-    // Show log file location
-    if !is_temp {
-        let logs = log_manager.get_session_logs(&container_info.id)?;
-        if let Some(log_entry) = logs.first() {
-            println!();
-            println!(
-                "Log saved to: {}",
-                style(log_entry.log_path.display()).dim()
-            );
-        }
-    }
+    // Get exit code
+    let inspect = docker
+        .inspect_exec(&exec.id)
+        .await
+        .map_err(|e| DBArenaError::ContainerOperationFailed(format!("Failed to inspect exec: {}", e)))?;
 
-    Ok(())
+    Ok(inspect.exit_code.unwrap_or(0))
 }
