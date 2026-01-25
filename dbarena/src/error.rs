@@ -47,6 +47,15 @@ pub enum DBArenaError {
     #[error("Initialization script not found: {0}")]
     InitScriptNotFound(String),
 
+    #[error("Monitoring error: {0}")]
+    MonitoringError(String),
+
+    #[error("Snapshot error: {0}")]
+    SnapshotError(String),
+
+    #[error("Volume error: {0}")]
+    VolumeError(String),
+
     #[error("{0}")]
     Other(String),
 }

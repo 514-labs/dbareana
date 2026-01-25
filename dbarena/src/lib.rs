@@ -4,5 +4,7 @@ pub mod container;
 pub mod error;
 pub mod health;
 pub mod init;
+pub mod monitoring;
+pub mod snapshot;
 
 pub use error::{DBArenaError, Result};

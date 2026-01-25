@@ -4,6 +4,9 @@ use std::collections::HashMap;
 /// Top-level configuration structure
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DBArenaConfig {
+    /// Configuration version
+    pub version: Option<String>,
+
     /// Global default settings applied to all containers
     #[serde(default)]
     pub defaults: DefaultsConfig,
@@ -15,6 +18,14 @@ pub struct DBArenaConfig {
     /// Database-specific configurations
     #[serde(default)]
     pub databases: HashMap<String, DatabaseConfig>,
+
+    /// Performance monitoring configuration
+    #[serde(default)]
+    pub monitoring: MonitoringConfig,
+
+    /// Snapshot configuration
+    #[serde(default)]
+    pub snapshots: SnapshotsConfig,
 }
 
 /// Default settings for all containers
@@ -55,6 +66,121 @@ pub struct DatabaseConfig {
     /// Initialization scripts to run on container startup
     #[serde(default)]
     pub init_scripts: Vec<InitScript>,
+
+    /// Auto-create volume for data persistence
+    pub auto_volume: Option<bool>,
+
+    /// Volume path inside container (database-specific default)
+    pub volume_path: Option<String>,
+
+    /// Named volumes to mount
+    #[serde(default)]
+    pub volumes: Vec<VolumeSpec>,
+
+    /// Bind mounts to create
+    #[serde(default)]
+    pub bind_mounts: Vec<BindMountSpec>,
+}
+
+/// Volume specification
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct VolumeSpec {
+    /// Volume name
+    pub name: String,
+    /// Container path
+    pub path: String,
+    /// Read-only mount
+    #[serde(default)]
+    pub read_only: bool,
+}
+
+/// Bind mount specification
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BindMountSpec {
+    /// Host path
+    pub host: String,
+    /// Container path
+    pub container: String,
+    /// Read-only mount
+    #[serde(default)]
+    pub read_only: bool,
+}
+
+/// Performance monitoring configuration
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MonitoringConfig {
+    /// Enable monitoring features
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Metrics collection interval in seconds
+    #[serde(default = "default_interval")]
+    pub interval_seconds: u64,
+
+    /// CPU usage warning threshold (percentage)
+    #[serde(default = "default_cpu_warning")]
+    pub cpu_warning_threshold: f64,
+
+    /// Memory usage warning threshold (percentage)
+    #[serde(default = "default_memory_warning")]
+    pub memory_warning_threshold: f64,
+}
+
+impl Default for MonitoringConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            interval_seconds: 2,
+            cpu_warning_threshold: 75.0,
+            memory_warning_threshold: 80.0,
+        }
+    }
+}
+
+/// Snapshot configuration
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SnapshotsConfig {
+    /// Auto-pause container during snapshot creation
+    #[serde(default = "default_true")]
+    pub auto_pause: bool,
+
+    /// Storage path for snapshot metadata
+    pub storage_path: Option<String>,
+
+    /// Maximum number of snapshots per container
+    #[serde(default = "default_max_snapshots")]
+    pub max_snapshots_per_container: usize,
+}
+
+impl Default for SnapshotsConfig {
+    fn default() -> Self {
+        Self {
+            auto_pause: true,
+            storage_path: None,
+            max_snapshots_per_container: 10,
+        }
+    }
+}
+
+// Default value functions
+fn default_true() -> bool {
+    true
+}
+
+fn default_interval() -> u64 {
+    2
+}
+
+fn default_cpu_warning() -> f64 {
+    75.0
+}
+
+fn default_memory_warning() -> f64 {
+    80.0
+}
+
+fn default_max_snapshots() -> usize {
+    10
 }
 
 /// Initialization script configuration

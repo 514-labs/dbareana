@@ -9,4 +9,5 @@ mod integration {
     mod init_script_tests;
     mod exec_tests;
     mod config_commands_tests;
+    mod stats_tests;
 }

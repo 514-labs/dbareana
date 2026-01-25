@@ -212,6 +212,142 @@ pub enum Commands {
         #[arg(short, long)]
         file: Option<std::path::PathBuf>,
     },
+
+    /// Show container performance metrics
+    Stats {
+        /// Container name or ID
+        container: Option<String>,
+
+        /// Follow stats with live updates (refresh every 2s)
+        #[arg(short, long)]
+        follow: bool,
+
+        /// Launch interactive TUI dashboard
+        #[arg(long)]
+        tui: bool,
+
+        /// Show stats for all running containers
+        #[arg(short, long)]
+        all: bool,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Container snapshot management
+    #[command(subcommand)]
+    Snapshot(SnapshotCommands),
+
+    /// Volume management
+    #[command(subcommand)]
+    Volume(VolumeCommands),
+}
+
+#[derive(clap::Subcommand)]
+pub enum VolumeCommands {
+    /// Create a new volume
+    Create {
+        /// Volume name
+        name: String,
+
+        /// Mount path (default: /data)
+        #[arg(short, long)]
+        mount_path: Option<String>,
+    },
+
+    /// List volumes
+    List {
+        /// Show all volumes (not just dbarena-managed)
+        #[arg(short, long)]
+        all: bool,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Delete a volume
+    Delete {
+        /// Volume name
+        name: String,
+
+        /// Force deletion even if in use
+        #[arg(short, long)]
+        force: bool,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+
+    /// Inspect volume details
+    Inspect {
+        /// Volume name
+        name: String,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum SnapshotCommands {
+    /// Create a snapshot from a container
+    Create {
+        /// Container name or ID
+        container: String,
+
+        /// Snapshot name
+        #[arg(short, long)]
+        name: String,
+
+        /// Optional message describing the snapshot
+        #[arg(short, long)]
+        message: Option<String>,
+    },
+
+    /// List all snapshots
+    List {
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Restore a snapshot to a new container
+    Restore {
+        /// Snapshot ID or name
+        snapshot: String,
+
+        /// Name for the restored container
+        #[arg(short, long)]
+        name: Option<String>,
+
+        /// Host port to bind to
+        #[arg(short, long)]
+        port: Option<u16>,
+    },
+
+    /// Delete a snapshot
+    Delete {
+        /// Snapshot ID or name
+        snapshot: String,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+
+    /// Inspect snapshot details
+    Inspect {
+        /// Snapshot ID or name
+        snapshot: String,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(clap::Subcommand)]

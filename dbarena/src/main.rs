@@ -1,7 +1,7 @@
 use clap::Parser;
-use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, start, stop};
+use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, snapshot, start, stats, stop, volume};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
-use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands};
+use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, SnapshotCommands, VolumeCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -200,6 +200,53 @@ async fn run() -> anyhow::Result<()> {
             script,
             file,
         } => exec::handle_exec(container, interactive, script, file).await,
+        Commands::Stats {
+            container,
+            follow,
+            tui,
+            all,
+            json,
+        } => {
+            use bollard::Docker;
+            use std::sync::Arc;
+
+            let docker = Docker::connect_with_local_defaults()
+                .map_err(|_| dbarena::error::DBArenaError::DockerNotAvailable)?;
+            let docker = Arc::new(docker);
+
+            stats::handle_stats(docker, container, follow, tui, all, json).await
+        }
+        Commands::Snapshot(snapshot_cmd) => match snapshot_cmd {
+            SnapshotCommands::Create { container, name, message } => {
+                snapshot::handle_snapshot_create(container, name, message).await
+            }
+            SnapshotCommands::List { json } => {
+                snapshot::handle_snapshot_list(json).await
+            }
+            SnapshotCommands::Restore { snapshot, name, port } => {
+                snapshot::handle_snapshot_restore(snapshot, name, port).await
+            }
+            SnapshotCommands::Delete { snapshot, yes } => {
+                snapshot::handle_snapshot_delete(snapshot, yes).await
+            }
+            SnapshotCommands::Inspect { snapshot, json } => {
+                snapshot::handle_snapshot_inspect(snapshot, json).await
+            }
+        },
+        Commands::Volume(volume_cmd) => match volume_cmd {
+            VolumeCommands::Create { name, mount_path } => {
+                volume::handle_volume_create(name, mount_path).await
+            }
+            VolumeCommands::List { all, json } => {
+                volume::handle_volume_list(all, json).await
+            }
+            VolumeCommands::Delete { name, force, yes } => {
+                volume::handle_volume_delete(name, force, yes).await
+            }
+            VolumeCommands::Inspect { name, json } => {
+                volume::handle_volume_inspect(name, json).await
+            }
+        },
     };
 
     if let Err(e) = result {

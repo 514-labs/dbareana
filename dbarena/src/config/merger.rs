@@ -10,9 +10,12 @@ use std::collections::HashMap;
 /// - Environment variables: override replaces base
 pub fn merge_configs(base: DBArenaConfig, override_config: DBArenaConfig) -> DBArenaConfig {
     DBArenaConfig {
+        version: override_config.version.or(base.version),
         defaults: merge_defaults(base.defaults, override_config.defaults),
         profiles: merge_profiles(base.profiles, override_config.profiles),
         databases: merge_databases(base.databases, override_config.databases),
+        monitoring: override_config.monitoring, // Override completely replaces
+        snapshots: override_config.snapshots,   // Override completely replaces
     }
 }
 
@@ -64,11 +67,21 @@ fn merge_database_config(base: DatabaseConfig, override_config: DatabaseConfig) 
     let mut init_scripts = base.init_scripts;
     init_scripts.extend(override_config.init_scripts);
 
+    let mut volumes = base.volumes;
+    volumes.extend(override_config.volumes);
+
+    let mut bind_mounts = base.bind_mounts;
+    bind_mounts.extend(override_config.bind_mounts);
+
     DatabaseConfig {
         default_version: override_config.default_version.or(base.default_version),
         env,
         profiles,
         init_scripts,
+        auto_volume: override_config.auto_volume.or(base.auto_volume),
+        volume_path: override_config.volume_path.or(base.volume_path),
+        volumes,
+        bind_mounts,
     }
 }
 
@@ -171,6 +184,10 @@ mod tests {
                 .collect(),
             profiles: HashMap::new(),
             init_scripts: vec![],
+            auto_volume: None,
+            volume_path: None,
+            volumes: vec![],
+            bind_mounts: vec![],
         };
 
         let override_config = DatabaseConfig {
@@ -184,6 +201,10 @@ mod tests {
             .collect(),
             profiles: HashMap::new(),
             init_scripts: vec![],
+            auto_volume: None,
+            volume_path: None,
+            volumes: vec![],
+            bind_mounts: vec![],
         };
 
         let merged = merge_database_config(base, override_config);

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use super::volume::VolumeMount;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerConfig {
     pub database: DatabaseType,
@@ -20,6 +22,9 @@ pub struct ContainerConfig {
     /// Continue creating container even if init scripts fail
     #[serde(default)]
     pub continue_on_error: bool,
+    /// Volume mounts for the container
+    #[serde(default)]
+    pub volumes: Vec<VolumeMount>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -94,6 +99,7 @@ impl ContainerConfig {
             env_vars: HashMap::new(),
             init_scripts: Vec::new(),
             continue_on_error: false,
+            volumes: Vec::new(),
         }
     }
 
@@ -149,6 +155,16 @@ impl ContainerConfig {
 
     pub fn with_continue_on_error(mut self, continue_on_error: bool) -> Self {
         self.continue_on_error = continue_on_error;
+        self
+    }
+
+    pub fn with_volumes(mut self, volumes: Vec<VolumeMount>) -> Self {
+        self.volumes = volumes;
+        self
+    }
+
+    pub fn with_volume(mut self, volume: VolumeMount) -> Self {
+        self.volumes.push(volume);
         self
     }
 }
