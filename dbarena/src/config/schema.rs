@@ -168,7 +168,7 @@ fn default_true() -> bool {
 }
 
 fn default_interval() -> u64 {
-    2
+    1  // 1 second for responsive real-time monitoring
 }
 
 fn default_cpu_warning() -> f64 {

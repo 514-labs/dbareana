@@ -7,6 +7,7 @@ use crate::container::models::ContainerStatus;
 use crate::error::Result;
 use crate::monitoring::{DockerStatsCollector, MetricsCollector, StatsTui};
 use crate::monitoring::{display_compact_header, display_metrics_compact, display_metrics_simple};
+use crate::config::schema::MonitoringConfig;
 
 /// Handle the stats command
 pub async fn handle_stats(
@@ -19,11 +20,16 @@ pub async fn handle_stats(
 ) -> Result<()> {
     let collector = DockerStatsCollector::new(docker.clone());
 
+    // Use default monitoring config interval (1 second)
+    // TODO: Load from config file when --config flag is added to stats command
+    let monitoring_config = MonitoringConfig::default();
+    let interval_secs = monitoring_config.interval_seconds;
+
     if all {
-        handle_stats_all(&collector, tui, json).await
+        handle_stats_all(&collector, tui, json, interval_secs).await
     } else {
         let container_id = get_container_id(container).await?;
-        handle_stats_single(&collector, &container_id, follow, tui, json).await
+        handle_stats_single(&collector, &container_id, follow, tui, json, interval_secs).await
     }
 }
 
@@ -74,10 +80,11 @@ async fn handle_stats_single(
     follow: bool,
     tui: bool,
     json: bool,
+    interval_secs: u64,
 ) -> Result<()> {
     if tui {
-        // Launch TUI
-        let mut tui_app = StatsTui::new()?;
+        // Launch TUI with configurable interval
+        let mut tui_app = StatsTui::new(interval_secs)?;
         tui_app.run_single(collector, container_id).await?;
     } else if follow {
         // Continuous text output
@@ -99,7 +106,7 @@ async fn handle_stats_single(
             }
 
             previous_metrics = Some(metrics);
-            sleep(Duration::from_secs(2)).await;
+            sleep(Duration::from_secs(interval_secs)).await;
         }
     } else {
         // One-time output
@@ -119,6 +126,7 @@ async fn handle_stats_all(
     collector: &DockerStatsCollector,
     tui: bool,
     json: bool,
+    _interval_secs: u64,
 ) -> Result<()> {
     if tui {
         // TODO: Implement multi-container TUI dashboard

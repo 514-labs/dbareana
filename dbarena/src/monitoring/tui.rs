@@ -29,11 +29,12 @@ pub struct StatsTui {
     metrics_history: VecDeque<ContainerMetrics>,
     paused: bool,
     show_help: bool,
+    collection_interval: Duration,
 }
 
 impl StatsTui {
-    /// Create a new TUI instance
-    pub fn new() -> Result<Self> {
+    /// Create a new TUI instance with specified collection interval
+    pub fn new(collection_interval_secs: u64) -> Result<Self> {
         enable_raw_mode()
             .map_err(|e| crate::error::DBArenaError::MonitoringError(format!("Failed to enable raw mode: {}", e)))?;
         let mut stdout = io::stdout();
@@ -48,6 +49,7 @@ impl StatsTui {
             metrics_history: VecDeque::with_capacity(HISTORY_SIZE),
             paused: false,
             show_help: false,
+            collection_interval: Duration::from_secs(collection_interval_secs),
         })
     }
 
@@ -59,7 +61,7 @@ impl StatsTui {
     ) -> Result<()> {
         let mut previous_metrics: Option<ContainerMetrics> = None;
         let mut last_collection = tokio::time::Instant::now();
-        let collection_interval = Duration::from_secs(2);
+        let collection_interval = self.collection_interval;
 
         loop {
             // Collect metrics if interval elapsed and not paused
@@ -277,7 +279,7 @@ fn render_cpu_chart(f: &mut Frame, area: Rect, metrics_history: &VecDeque<Contai
     let sparkline = Sparkline::default()
         .block(
             Block::default()
-                .title("CPU History (60s) - capped at 100% for display")
+                .title("CPU History - capped at 100% for display")
                 .borders(Borders::ALL)
         )
         .data(&data)
@@ -296,7 +298,7 @@ fn render_memory_chart(f: &mut Frame, area: Rect, metrics_history: &VecDeque<Con
     let sparkline = Sparkline::default()
         .block(
             Block::default()
-                .title("Memory History (60s)")
+                .title("Memory History")
                 .borders(Borders::ALL)
         )
         .data(&data)
