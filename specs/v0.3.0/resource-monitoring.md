@@ -4,6 +4,8 @@
 
 Comprehensive resource monitoring for database containers, tracking CPU, memory, disk I/O, and network usage. Provides real-time metrics collection, historical data retention, and the foundation for performance profiling and comparison across database configurations.
 
+**Status:** Implemented. CLI command name is `dbarena` (legacy examples may still show `simdb`). See `specs/IMPLEMENTATION_TRUTH.md`.
+
 ## Problem Statement
 
 When testing databases, understanding resource consumption is critical:

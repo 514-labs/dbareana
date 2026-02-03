@@ -1,0 +1,19 @@
+# OLTP Workload Configuration
+#
+# Simulates Online Transaction Processing with frequent small transactions.
+# Suitable for banking, booking systems, and general transactional workloads.
+#
+# Pattern Characteristics:
+# - 40% SELECT (primary key lookups)
+# - 30% INSERT (new transactions)
+# - 25% UPDATE (modify existing data)
+# - 5% DELETE (cleanup)
+#
+# Usage: dbarena workload run --config workload-oltp.toml --container mydb
+
+name = "OLTP Transaction Workload"
+pattern = "oltp"
+tables = ["users", "orders", "transactions"]
+connections = 50
+target_tps = 200
+duration_seconds = 300  # 5 minutes

@@ -4,6 +4,10 @@
 
 This release completes the monitoring foundation by adding database-specific performance metrics and a real-time terminal user interface (TUI). Users can now visualize live database metrics, resource consumption, and container status in an interactive multi-pane dashboard, making it easy to monitor multiple databases simultaneously.
 
+## Status
+
+**Implemented** — see `specs/IMPLEMENTATION_TRUTH.md`.
+
 ## Key Features
 
 - **Database Metrics Collection**: Query execution stats, connection pool metrics, transaction rates, replication lag
@@ -15,7 +19,7 @@ This release completes the monitoring foundation by adding database-specific per
 
 ## Value Proposition
 
-This release transforms simDB from a CLI tool into an interactive monitoring platform. Users can now:
+This release transforms dbarena from a CLI tool into an interactive monitoring platform. Users can now:
 - Monitor multiple databases in a single glancewithout switching windows
 - See real-time performance metrics without querying databases manually
 - Quickly identify performance issues through visual indicators

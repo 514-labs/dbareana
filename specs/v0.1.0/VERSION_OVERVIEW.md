@@ -2,7 +2,11 @@
 
 ## Release Summary
 
-The foundation release establishes the core infrastructure for simDB: Docker-based container management and a Rust CLI interface. This version enables users to spin up database instances (PostgreSQL, MySQL, SQL Server) with minimal configuration and manage their lifecycle through an intuitive command-line interface.
+The foundation release establishes the core infrastructure for dbarena: Docker-based container management and a Rust CLI interface. This version enables users to spin up database instances (PostgreSQL, MySQL, SQL Server) with minimal configuration and manage their lifecycle through an intuitive command-line interface.
+
+## Status
+
+**Implemented** — see `specs/IMPLEMENTATION_TRUTH.md` for code-derived behavior.
 
 ## Key Features
 

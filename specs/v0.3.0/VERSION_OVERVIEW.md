@@ -4,6 +4,10 @@
 
 This release adds comprehensive resource monitoring capabilities, enabling users to track CPU, memory, disk I/O, and network usage for each database container. Real-time and historical resource metrics provide visibility into database performance characteristics and resource consumption patterns.
 
+## Status
+
+**Implemented** — see `specs/IMPLEMENTATION_TRUTH.md`.
+
 ## Key Features
 
 - **CPU Usage Tracking**: Per-container CPU utilization percentage and CPU time
@@ -34,7 +38,7 @@ This release provides essential visibility into resource consumption, enabling u
 
 **Previous Versions:**
 - v0.1.0 (Docker Container Management + Rust CLI Foundation)
-- v0.2.0 (Configuration Management System)
+- v0.2.0 (Configuration + Init Scripts)
 
 **System Requirements:**
 - Docker Engine 20.10+ with stats API enabled

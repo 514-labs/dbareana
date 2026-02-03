@@ -1,0 +1,74 @@
+# Custom SQL Queries Workload
+#
+# Demonstrates how to define specific SQL queries with parameterized values.
+# This example shows various query types for an e-commerce system.
+#
+# Usage: dbarena workload run --config workload-custom-sql.toml --container mydb
+
+name = "Custom SQL E-commerce Queries"
+tables = ["users", "orders", "products", "order_items"]
+connections = 20
+target_tps = 50
+duration_seconds = 300
+
+# Query 1: Browse recent orders for a customer (40% of load)
+[[custom_queries]]
+name = "recent_customer_orders"
+sql = "SELECT * FROM orders WHERE user_id = :user_id AND created_at > NOW() - INTERVAL '30 days' ORDER BY created_at DESC LIMIT 10"
+weight = 0.4
+
+[[custom_queries.parameters]]
+name = "user_id"
+generator = "foreign_key"
+[custom_queries.parameters.options]
+references = { table = "users", column = "id" }
+
+# Query 2: View product details (30% of load)
+[[custom_queries]]
+name = "view_product"
+sql = "SELECT p.*, COUNT(oi.id) as orders_count FROM products p LEFT JOIN order_items oi ON p.id = oi.product_id WHERE p.id = :product_id GROUP BY p.id"
+weight = 0.3
+
+[[custom_queries.parameters]]
+name = "product_id"
+generator = "foreign_key"
+[custom_queries.parameters.options]
+references = { table = "products", column = "id" }
+
+# Query 3: Create new order (20% of load)
+[[custom_queries]]
+name = "create_order"
+sql = "INSERT INTO orders (user_id, total, status, created_at) VALUES (:user_id, :total, 'pending', NOW())"
+weight = 0.2
+
+[[custom_queries.parameters]]
+name = "user_id"
+generator = "foreign_key"
+[custom_queries.parameters.options]
+references = { table = "users", column = "id" }
+
+[[custom_queries.parameters]]
+name = "total"
+generator = "random_decimal"
+[custom_queries.parameters.options]
+min = 20.0
+max = 500.0
+precision = 2
+
+# Query 4: Update order status (10% of load)
+[[custom_queries]]
+name = "update_order_status"
+sql = "UPDATE orders SET status = :status WHERE id = :order_id"
+weight = 0.1
+
+[[custom_queries.parameters]]
+name = "order_id"
+generator = "foreign_key"
+[custom_queries.parameters.options]
+references = { table = "orders", column = "id" }
+
+[[custom_queries.parameters]]
+name = "status"
+generator = "enum"
+[custom_queries.parameters.options]
+values = ["pending", "processing", "shipped", "delivered"]

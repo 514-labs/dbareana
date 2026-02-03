@@ -4,6 +4,8 @@
 
 An interactive terminal-based dashboard providing real-time visualization of database metrics, resource consumption, and container status. Built with Ratatui, the TUI offers a multi-pane layout with live updates, keyboard navigation, and ASCII-based charts for monitoring multiple database instances simultaneously.
 
+**Status:** Implemented. CLI command name is `dbarena` (legacy examples may still show `simdb`). See `specs/IMPLEMENTATION_TRUTH.md`.
+
 ## Problem Statement
 
 Monitoring multiple databases requires:

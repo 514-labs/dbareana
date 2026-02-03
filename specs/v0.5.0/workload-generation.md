@@ -83,23 +83,23 @@ Without automated workload generation, users cannot effectively test CDC capture
 
 **FR-8: Configuration Format**
 ```toml
-[[workloads]]
-name = "cdc_test_workload"
-pattern = "cdc_focused"  # or read_heavy, write_heavy, balanced
+name = "ecommerce_workload"
+pattern = "ecommerce"  # oltp, ecommerce, olap, reporting, time_series, social_media, iot, read_heavy, write_heavy, balanced
 tables = ["users", "orders"]
 connections = 10
 target_tps = 100
 duration_seconds = 300
 
-  [[workloads.custom_sql]]
-  query = "UPDATE users SET last_login = NOW() WHERE id = $1"
-  weight = 0.1  # 10% of operations
+[custom_operations]
+select_weight = 0.5
+insert_weight = 0.25
+update_weight = 0.2
+delete_weight = 0.05
 
-[[workloads]]
-name = "custom_script"
-script_file = "./test_queries.sql"
-connections = 5
-iterations = 100
+[[custom_queries]]
+name = "update_last_login"
+sql = "UPDATE users SET last_login = NOW() WHERE id = $1"
+weight = 0.1
 ```
 
 ### Non-Functional Requirements
@@ -428,28 +428,25 @@ impl WorkloadStats {
 
 ```bash
 # Run built-in workload pattern
-simdb workload run --container <name> --pattern <pattern> --duration <seconds>
+dbarena workload --container <name> --pattern <pattern> --duration <seconds>
 
 # Run with specific TPS and connections
-simdb workload run --container <name> --pattern balanced \
+dbarena workload --container <name> --pattern balanced \
     --connections 10 --tps 100 --duration 300
 
-# Run custom SQL script
-simdb workload run --container <name> --script <file> --iterations 1000
-
 # Run workload from configuration
-simdb workload run --config <config-file> --container <name>
+dbarena workload --config <config-file> --container <name>
 ```
 
 ### Example Usage
 
 ```bash
 # Run balanced workload for 5 minutes
-$ simdb workload run --container simdb-postgres-16-a3f9 \
+$ dbarena workload --container dbarena-postgres-16-a3f9 \
     --pattern balanced --connections 10 --tps 100 --duration 300
 
 Starting workload: balanced
-  Container: simdb-postgres-16-a3f9
+  Container: dbarena-postgres-16-a3f9
   Connections: 10
   Target TPS: 100
   Duration: 300s
@@ -469,12 +466,12 @@ Latency p50: 12.50ms
 Latency p95: 28.30ms
 Latency p99: 45.20ms
 
-# Run CDC-focused workload
-$ simdb workload run --container simdb-mysql-8-b7e2 \
-    --pattern cdc_focused --connections 5 --tps 50 --duration 600
+# Run write-heavy workload
+$ dbarena workload --container dbarena-mysql-8-b7e2 \
+    --pattern write_heavy --connections 5 --tps 50 --duration 600
 
-Starting workload: cdc_focused (maximum change generation)
-  Container: simdb-mysql-8-b7e2
+Starting workload: write_heavy
+  Container: dbarena-mysql-8-b7e2
   Connections: 5
   Target TPS: 50
   Duration: 600s
@@ -501,7 +498,7 @@ Actual TPS: 49.2 | Latency p50: 15.1ms | Success: 14760/14760 (100%)
 
 ### Manual Testing
 1. **Visual Monitoring**: Run workload while TUI shows metrics
-2. **CDC Integration**: Run workload, verify CDC captures changes
+2. **Change Event Monitoring (optional)**: If CDC is configured externally, verify change capture
 3. **Long Duration**: Run for 1 hour, verify stability
 4. **Database Comparison**: Run identical workload on all three databases
 
@@ -517,4 +514,4 @@ Actual TPS: 49.2 | Latency p50: 15.1ms | Success: 14760/14760 (100%)
 - Dependent operations (read then update same row)
 - Workload recording and replay
 - Adaptive rate adjustment based on latency
-- Distributed workload (multiple simDB instances)
+- Distributed workload (multiple dbarena instances)
