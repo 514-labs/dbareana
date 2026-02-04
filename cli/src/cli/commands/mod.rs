@@ -2,6 +2,7 @@
 pub mod config;
 pub mod create;
 pub mod destroy;
+pub mod docs;
 pub mod exec;
 pub mod init_cmd;
 pub mod inspect;

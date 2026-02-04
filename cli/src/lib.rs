@@ -2,6 +2,7 @@ pub mod cli;
 pub mod config;
 pub mod container;
 pub mod database_metrics;
+pub mod docs;
 pub mod error;
 pub mod health;
 pub mod init;

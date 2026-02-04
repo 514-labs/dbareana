@@ -56,6 +56,9 @@ pub enum DBArenaError {
     #[error("Volume error: {0}")]
     VolumeError(String),
 
+    #[error("Docs error: {0}")]
+    DocsError(String),
+
     #[error("{0}")]
     Other(String),
 }

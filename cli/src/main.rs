@@ -1,7 +1,7 @@
 use clap::Parser;
-use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, network, query, seed, snapshot, start, stats, stop, template, volume, workload};
+use dbarena::cli::commands::{config, create, destroy, docs, exec, init_cmd, inspect, list, logs, network, query, seed, snapshot, start, stats, stop, template, volume, workload};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
-use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, NetworkCommands, SnapshotCommands, TemplateCommands, VolumeCommands};
+use dbarena::cli::{Cli, Commands, ConfigCommands, DocsCommands, InitCommands, NetworkCommands, SnapshotCommands, TemplateCommands, VolumeCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 #[tokio::main]
@@ -339,6 +339,35 @@ async fn run() -> anyhow::Result<()> {
             )
             .await
         }
+        Commands::Docs(docs_cmd) => match docs_cmd {
+            DocsCommands::List { installed, available, json } => {
+                docs::handle_docs_list(installed, available, json).await
+            }
+            DocsCommands::Install {
+                db,
+                version,
+                force,
+                keep_source,
+                accept_license,
+            } => {
+                docs::handle_docs_install(db, version, force, keep_source, accept_license).await
+            }
+            DocsCommands::Search {
+                db,
+                version,
+                query,
+                limit,
+                json,
+            } => docs::handle_docs_search(db, version, query, limit, json).await,
+            DocsCommands::Show {
+                doc_id,
+                max_chars,
+                json,
+            } => docs::handle_docs_show(doc_id, max_chars, json).await,
+            DocsCommands::Remove { db, version, yes } => {
+                docs::handle_docs_remove(db, version, yes).await
+            }
+        },
         Commands::Template(template_cmd) => match template_cmd {
             TemplateCommands::Save { container, name, description } => {
                 template::handle_template_save(container, name, description).await
