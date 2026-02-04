@@ -301,6 +301,10 @@ pub enum Commands {
     #[command(subcommand)]
     Template(TemplateCommands),
 
+    /// Database documentation search
+    #[command(subcommand)]
+    Docs(DocsCommands),
+
     /// Seed database with generated data
     Seed {
         /// Container name or ID
@@ -673,5 +677,97 @@ pub enum TemplateCommands {
         /// Output in JSON format
         #[arg(long)]
         json: bool,
+    },
+}
+
+#[derive(clap::Subcommand)]
+pub enum DocsCommands {
+    /// List available and installed documentation packs
+    List {
+        /// Show only installed packs
+        #[arg(long)]
+        installed: bool,
+
+        /// Show only available packs
+        #[arg(long)]
+        available: bool,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Install a documentation pack
+    Install {
+        /// Database type (postgres, mysql, sqlserver)
+        db: String,
+
+        /// Database version
+        #[arg(long)]
+        version: String,
+
+        /// Force reinstall if already installed
+        #[arg(long)]
+        force: bool,
+
+        /// Keep raw downloaded source files
+        #[arg(long)]
+        keep_source: bool,
+
+        /// Accept documentation license
+        #[arg(long)]
+        accept_license: bool,
+    },
+
+    /// Search installed documentation packs
+    Search {
+        /// Database type (postgres, mysql, sqlserver)
+        #[arg(long)]
+        db: String,
+
+        /// Database version
+        #[arg(long)]
+        version: String,
+
+        /// Query string
+        #[arg(long)]
+        query: String,
+
+        /// Maximum results to return
+        #[arg(long, default_value = "10")]
+        limit: usize,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Show a specific documentation chunk by doc ID
+    Show {
+        /// Doc ID returned by docs search
+        #[arg(long)]
+        doc_id: String,
+
+        /// Maximum characters to return
+        #[arg(long, default_value = "1200")]
+        max_chars: usize,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Remove an installed documentation pack
+    Remove {
+        /// Database type (postgres, mysql, sqlserver)
+        db: String,
+
+        /// Database version
+        #[arg(long)]
+        version: String,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
     },
 }
