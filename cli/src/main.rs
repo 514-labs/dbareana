@@ -202,10 +202,14 @@ async fn run() -> anyhow::Result<()> {
         },
         Commands::Query {
             container,
+            container_flag,
             interactive,
             script,
             file,
-        } => query::handle_query(container, interactive, script, file).await,
+        } => {
+            let resolved_container = container_flag.or(container);
+            query::handle_query(resolved_container, interactive, script, file).await
+        }
         Commands::Exec {
             containers,
             all,
@@ -233,20 +237,32 @@ async fn run() -> anyhow::Result<()> {
             stats::handle_stats(docker, container, follow, tui, multipane, all, json).await
         }
         Commands::Snapshot(snapshot_cmd) => match snapshot_cmd {
-            SnapshotCommands::Create { container, name, message } => {
-                snapshot::handle_snapshot_create(container, name, message).await
+            SnapshotCommands::Create { container, container_flag, name, message } => {
+                let resolved_container = container_flag
+                    .or(container)
+                    .ok_or_else(|| anyhow::anyhow!("Container name or ID is required"))?;
+                snapshot::handle_snapshot_create(resolved_container, name, message).await
             }
             SnapshotCommands::List { json } => {
                 snapshot::handle_snapshot_list(json).await
             }
-            SnapshotCommands::Restore { snapshot, name, port } => {
-                snapshot::handle_snapshot_restore(snapshot, name, port).await
+            SnapshotCommands::Restore { snapshot, snapshot_flag, name, port } => {
+                let resolved_snapshot = snapshot_flag
+                    .or(snapshot)
+                    .ok_or_else(|| anyhow::anyhow!("Snapshot ID or name is required"))?;
+                snapshot::handle_snapshot_restore(resolved_snapshot, name, port).await
             }
-            SnapshotCommands::Delete { snapshot, yes } => {
-                snapshot::handle_snapshot_delete(snapshot, yes).await
+            SnapshotCommands::Delete { snapshot, snapshot_flag, yes } => {
+                let resolved_snapshot = snapshot_flag
+                    .or(snapshot)
+                    .ok_or_else(|| anyhow::anyhow!("Snapshot ID or name is required"))?;
+                snapshot::handle_snapshot_delete(resolved_snapshot, yes).await
             }
-            SnapshotCommands::Inspect { snapshot, json } => {
-                snapshot::handle_snapshot_inspect(snapshot, json).await
+            SnapshotCommands::Inspect { snapshot, snapshot_flag, json } => {
+                let resolved_snapshot = snapshot_flag
+                    .or(snapshot)
+                    .ok_or_else(|| anyhow::anyhow!("Snapshot ID or name is required"))?;
+                snapshot::handle_snapshot_inspect(resolved_snapshot, json).await
             }
         },
         Commands::Volume(volume_cmd) => match volume_cmd {

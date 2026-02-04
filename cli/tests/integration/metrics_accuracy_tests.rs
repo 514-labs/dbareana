@@ -10,11 +10,15 @@ use tokio::time::sleep;
 use bollard::exec::{CreateExecOptions, StartExecResults};
 use futures::StreamExt;
 
-use crate::common::{create_and_start_container, cleanup_container, unique_container_name};
+use crate::common::{create_and_start_container, cleanup_container, unique_container_name, docker_available};
 
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_connection_count_accuracy() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Create PostgreSQL container
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-conn-accuracy"))
@@ -98,6 +102,10 @@ async fn test_postgres_connection_count_accuracy() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_transaction_count_accuracy() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-txn-accuracy"))
         .with_version("16".to_string());
@@ -174,6 +182,10 @@ async fn test_postgres_transaction_count_accuracy() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_query_count_accuracy() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-query-accuracy"))
         .with_version("16".to_string());
@@ -256,6 +268,10 @@ async fn test_postgres_query_count_accuracy() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_mysql_connection_count_accuracy() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::MySQL)
         .with_name(unique_container_name("mysql-conn-accuracy"))
         .with_version("8".to_string());
@@ -293,6 +309,10 @@ async fn test_mysql_connection_count_accuracy() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_rate_calculation_time_accuracy() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-rate-time-accuracy"))
         .with_version("16".to_string());
@@ -344,6 +364,10 @@ async fn test_rate_calculation_time_accuracy() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_metrics_consistency_across_collections() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-consistency"))
         .with_version("16".to_string());

@@ -209,8 +209,12 @@ pub enum Commands {
 
     /// Execute SQL on a running container
     Query {
-        /// Container name or ID
+        /// Container name or ID (positional)
         container: Option<String>,
+
+        /// Container name or ID
+        #[arg(long = "container", value_name = "container", conflicts_with = "container")]
+        container_flag: Option<String>,
 
         /// Interactive mode - select container
         #[arg(short, long)]
@@ -410,8 +414,13 @@ pub enum VolumeCommands {
 pub enum SnapshotCommands {
     /// Create a snapshot from a container
     Create {
+        /// Container name or ID (positional)
+        #[arg(value_name = "container", required_unless_present = "container_flag")]
+        container: Option<String>,
+
         /// Container name or ID
-        container: String,
+        #[arg(long = "container", value_name = "container", conflicts_with = "container")]
+        container_flag: Option<String>,
 
         /// Snapshot name
         #[arg(short, long)]
@@ -431,8 +440,13 @@ pub enum SnapshotCommands {
 
     /// Restore a snapshot to a new container
     Restore {
+        /// Snapshot ID or name (positional)
+        #[arg(value_name = "snapshot", required_unless_present = "snapshot_flag")]
+        snapshot: Option<String>,
+
         /// Snapshot ID or name
-        snapshot: String,
+        #[arg(long = "snapshot", value_name = "snapshot", conflicts_with = "snapshot")]
+        snapshot_flag: Option<String>,
 
         /// Name for the restored container
         #[arg(short, long)]
@@ -445,8 +459,13 @@ pub enum SnapshotCommands {
 
     /// Delete a snapshot
     Delete {
+        /// Snapshot ID or name (positional)
+        #[arg(value_name = "snapshot", required_unless_present = "snapshot_flag")]
+        snapshot: Option<String>,
+
         /// Snapshot ID or name
-        snapshot: String,
+        #[arg(long = "snapshot", value_name = "snapshot", conflicts_with = "snapshot")]
+        snapshot_flag: Option<String>,
 
         /// Skip confirmation prompt
         #[arg(short = 'y', long)]
@@ -455,8 +474,13 @@ pub enum SnapshotCommands {
 
     /// Inspect snapshot details
     Inspect {
+        /// Snapshot ID or name (positional)
+        #[arg(value_name = "snapshot", required_unless_present = "snapshot_flag")]
+        snapshot: Option<String>,
+
         /// Snapshot ID or name
-        snapshot: String,
+        #[arg(long = "snapshot", value_name = "snapshot", conflicts_with = "snapshot")]
+        snapshot_flag: Option<String>,
 
         /// Output in JSON format
         #[arg(long)]

@@ -33,8 +33,8 @@ Users can:
 ## Commands (Implemented)
 
 ```
-dbarena exec <containers...> -- <command>
-dbarena query --container <name> --script <sql> | --file <path>
+dbarena exec [--all] [--filter <pattern>] [--user <user>] [--workdir <dir>] [--parallel] <containers...> -- <command>
+dbarena query [--container <name>] [-i] --script <sql> | --file <path>
 
 dbarena snapshot create --container <name> --name <snap>
 dbarena snapshot list [--json]
@@ -70,5 +70,7 @@ dbarena template inspect <name> [--json]
 - [x] Templates can be saved and exported/imported
 
 ## Notes
+
+- `query` and `snapshot` accept positional identifiers for backward compatibility, but the spec uses `--container` and `--snapshot` for clarity.
 
 Detailed command behavior and flags are captured in `specs/IMPLEMENTATION_TRUTH.md`.

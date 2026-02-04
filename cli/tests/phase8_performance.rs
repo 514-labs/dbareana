@@ -7,7 +7,7 @@
 //! - Stability: 1-hour workloads without errors
 //! - Cross-database: Identical behavior on Postgres, MySQL, SQL Server
 
-use dbarena::container::{ContainerManager, DatabaseType, DockerClient};
+use dbarena::container::{ContainerConfig, DatabaseType, DockerClient};
 use dbarena::seed::config::SeedConfig;
 use dbarena::seed::engine::SeedingEngine;
 use dbarena::workload::{WorkloadConfig, WorkloadEngine, WorkloadPattern};
@@ -15,45 +15,27 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::runtime::Runtime;
 
+#[path = "common/mod.rs"]
+mod common;
+use common::{cleanup_container, create_and_start_container, docker_available, execute_query};
+
 /// Test helper to create a test container
 async fn create_test_container(
     db_type: DatabaseType,
     name: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let docker_client = DockerClient::new()?;
-    docker_client.verify_connection().await?;
+) -> anyhow::Result<String> {
+    let config = ContainerConfig::new(db_type)
+        .with_name(name.to_string())
+        .with_memory_limit(1024);
 
-    let manager = ContainerManager::new(docker_client.clone());
-
-    // Create container
-    let config = dbarena::config::ContainerConfig {
-        database_type: db_type,
-        version: None,
-        name: Some(name.to_string()),
-        port: None,
-        persistent: false,
-        memory: Some(1024), // 1GB for testing
-        cpu_shares: None,
-        environment: Default::default(),
-    };
-
-    let container_id = manager.create(&config).await?;
-
-    // Wait for container to be ready
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
-    Ok(container_id)
+    let test_container = create_and_start_container(config, Duration::from_secs(90)).await?;
+    Ok(test_container.id)
 }
 
 /// Test helper to destroy a test container
-async fn destroy_test_container(container_id: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let docker_client = DockerClient::new()?;
-    let manager = ContainerManager::new(docker_client);
-
-    manager
-        .destroy(container_id, false)
+async fn destroy_test_container(container_id: &str) -> anyhow::Result<()> {
+    cleanup_container(container_id)
         .await
-        .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
 }
 
 /// NFR Test: Seed 100,000 rows in <60 seconds
@@ -63,15 +45,15 @@ fn test_seeding_performance_100k_rows() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Seed 100K rows in <60s");
+        if !docker_available().await {
+            eprintln!("Skipping test: Docker not available");
+            return;
+        }
 
         // Create test container
         let container_id = create_test_container(DatabaseType::Postgres, "test-seed-perf")
             .await
             .expect("Failed to create test container");
-
-        // Create simple schema
-        let docker_client = DockerClient::new().unwrap();
-        let docker = Arc::new(docker_client.docker().clone());
 
         let create_table_sql = r#"
             CREATE TABLE IF NOT EXISTS test_users (
@@ -82,20 +64,16 @@ fn test_seeding_performance_100k_rows() {
             )
         "#;
 
-        dbarena::database_metrics::collector::exec_query(
-            docker.clone(),
-            &container_id,
-            DatabaseType::Postgres,
-            create_table_sql,
-        )
-        .await
-        .expect("Failed to create table");
+        execute_query(&container_id, create_table_sql, DatabaseType::Postgres)
+            .await
+            .expect("Failed to create table");
 
         // Create seed config for 100K rows
         let config_toml = r#"
-[seed_rules]
 global_seed = 42
+batch_size = 1000
 
+[seed_rules]
 [[seed_rules.tables]]
 name = "test_users"
 count = 100000
@@ -127,17 +105,19 @@ type = "now"
 
         // Seed and measure time
         let start = Instant::now();
+        let docker_client = DockerClient::new().unwrap();
+        let docker = Arc::new(docker_client.docker().clone());
 
         let mut engine = SeedingEngine::new(
             container_id.clone(),
             DatabaseType::Postgres,
             docker.clone(),
-            seed_config.seed_rules.global_seed,
-            Some(1000), // batch size
+            seed_config.global_seed.unwrap_or(42),
+            seed_config.batch_size,
         );
 
         let stats = engine
-            .seed_all(&seed_config.seed_rules.tables)
+            .seed_all(seed_config.seed_rules.tables())
             .await
             .expect("Seeding failed");
 
@@ -170,14 +150,15 @@ fn test_workload_tps_accuracy() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Workload TPS accuracy (target 100 TPS, ±10%)");
+        if !docker_available().await {
+            eprintln!("Skipping test: Docker not available");
+            return;
+        }
 
         // Create test container
         let container_id = create_test_container(DatabaseType::Postgres, "test-workload-tps")
             .await
             .expect("Failed to create test container");
-
-        let docker_client = DockerClient::new().unwrap();
-        let docker = Arc::new(docker_client.docker().clone());
 
         // Create simple schema
         let create_table_sql = r#"
@@ -193,14 +174,9 @@ fn test_workload_tps_accuracy() {
             FROM generate_series(1, 1000);
         "#;
 
-        dbarena::database_metrics::collector::exec_query(
-            docker.clone(),
-            &container_id,
-            DatabaseType::Postgres,
-            create_table_sql,
-        )
-        .await
-        .expect("Failed to create table");
+        execute_query(&container_id, create_table_sql, DatabaseType::Postgres)
+            .await
+            .expect("Failed to create table");
 
         // Create workload config
         let workload_config = WorkloadConfig {
@@ -216,6 +192,8 @@ fn test_workload_tps_accuracy() {
         };
 
         // Run workload
+        let docker_client = DockerClient::new().unwrap();
+        let docker = Arc::new(docker_client.docker().clone());
         let engine = WorkloadEngine::new(
             container_id.clone(),
             DatabaseType::Postgres,
@@ -261,13 +239,14 @@ fn test_workload_latency_p99() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Workload latency p99 <100ms");
+        if !docker_available().await {
+            eprintln!("Skipping test: Docker not available");
+            return;
+        }
 
         let container_id = create_test_container(DatabaseType::Postgres, "test-latency")
             .await
             .expect("Failed to create test container");
-
-        let docker_client = DockerClient::new().unwrap();
-        let docker = Arc::new(docker_client.docker().clone());
 
         // Create test table
         let create_table_sql = r#"
@@ -279,14 +258,9 @@ fn test_workload_latency_p99() {
             SELECT generate_series FROM generate_series(1, 10000);
         "#;
 
-        dbarena::database_metrics::collector::exec_query(
-            docker.clone(),
-            &container_id,
-            DatabaseType::Postgres,
-            create_table_sql,
-        )
-        .await
-        .expect("Failed to create table");
+        execute_query(&container_id, create_table_sql, DatabaseType::Postgres)
+            .await
+            .expect("Failed to create table");
 
         // Run workload with moderate load
         let workload_config = WorkloadConfig {
@@ -301,6 +275,8 @@ fn test_workload_latency_p99() {
             transaction_count: None,
         };
 
+        let docker_client = DockerClient::new().unwrap();
+        let docker = Arc::new(docker_client.docker().clone());
         let engine = WorkloadEngine::new(
             container_id.clone(),
             DatabaseType::Postgres,
@@ -337,13 +313,14 @@ fn test_seeding_scale_1m_rows() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Scale Test: Seed 1M rows (stability)");
+        if !docker_available().await {
+            eprintln!("Skipping test: Docker not available");
+            return;
+        }
 
         let container_id = create_test_container(DatabaseType::Postgres, "test-seed-scale")
             .await
             .expect("Failed to create test container");
-
-        let docker_client = DockerClient::new().unwrap();
-        let docker = Arc::new(docker_client.docker().clone());
 
         let create_table_sql = r#"
             CREATE TABLE IF NOT EXISTS large_test (
@@ -352,19 +329,15 @@ fn test_seeding_scale_1m_rows() {
             )
         "#;
 
-        dbarena::database_metrics::collector::exec_query(
-            docker.clone(),
-            &container_id,
-            DatabaseType::Postgres,
-            create_table_sql,
-        )
-        .await
-        .expect("Failed to create table");
+        execute_query(&container_id, create_table_sql, DatabaseType::Postgres)
+            .await
+            .expect("Failed to create table");
 
         let config_toml = r#"
-[seed_rules]
 global_seed = 123
+batch_size = 5000
 
+[seed_rules]
 [[seed_rules.tables]]
 name = "large_test"
 count = 1000000
@@ -385,17 +358,19 @@ template = "data_{random_int:1:999999}"
         let seed_config: SeedConfig = toml::from_str(config_toml).unwrap();
 
         let start = Instant::now();
+        let docker_client = DockerClient::new().unwrap();
+        let docker = Arc::new(docker_client.docker().clone());
 
         let mut engine = SeedingEngine::new(
             container_id.clone(),
             DatabaseType::Postgres,
             docker.clone(),
-            seed_config.seed_rules.global_seed,
-            Some(5000), // larger batch size
+            seed_config.global_seed.unwrap_or(123),
+            seed_config.batch_size,
         );
 
         let stats = engine
-            .seed_all(&seed_config.seed_rules.tables)
+            .seed_all(seed_config.seed_rules.tables())
             .await
             .expect("Large scale seeding failed");
 
@@ -418,13 +393,14 @@ fn test_workload_long_duration() {
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Stability Test: 5-minute workload");
+        if !docker_available().await {
+            eprintln!("Skipping test: Docker not available");
+            return;
+        }
 
         let container_id = create_test_container(DatabaseType::Postgres, "test-stability")
             .await
             .expect("Failed to create test container");
-
-        let docker_client = DockerClient::new().unwrap();
-        let docker = Arc::new(docker_client.docker().clone());
 
         // Create test schema
         let create_table_sql = r#"
@@ -436,14 +412,9 @@ fn test_workload_long_duration() {
             SELECT generate_series FROM generate_series(1, 5000);
         "#;
 
-        dbarena::database_metrics::collector::exec_query(
-            docker.clone(),
-            &container_id,
-            DatabaseType::Postgres,
-            create_table_sql,
-        )
-        .await
-        .expect("Failed to create table");
+        execute_query(&container_id, create_table_sql, DatabaseType::Postgres)
+            .await
+            .expect("Failed to create table");
 
         // Run 5-minute workload (shorter than 1 hour for faster testing)
         let workload_config = WorkloadConfig {
@@ -458,6 +429,8 @@ fn test_workload_long_duration() {
             transaction_count: None,
         };
 
+        let docker_client = DockerClient::new().unwrap();
+        let docker = Arc::new(docker_client.docker().clone());
         let engine = WorkloadEngine::new(
             container_id.clone(),
             DatabaseType::Postgres,
@@ -481,7 +454,7 @@ fn test_workload_long_duration() {
         );
 
         // Should process expected number of transactions
-        let expected_min_transactions = 500 * 300 * 0.9; // 90% of target
+        let expected_min_transactions = 500.0 * 300.0 * 0.9; // 90% of target
         assert!(
             snapshot.total as f64 >= expected_min_transactions,
             "Should process at least 90% of target transactions"

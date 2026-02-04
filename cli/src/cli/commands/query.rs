@@ -24,7 +24,7 @@ pub async fn handle_query(
     } else {
         container.ok_or_else(|| {
             DBArenaError::InvalidConfig(
-                "Container name required. Use -i for interactive mode.".to_string(),
+                "Container name required. Use --container <name> or -i for interactive mode.".to_string(),
             )
         })?
     };

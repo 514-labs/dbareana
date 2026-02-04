@@ -10,11 +10,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use crate::common::{create_and_start_container, cleanup_container, unique_container_name};
+use crate::common::{create_and_start_container, cleanup_container, unique_container_name, docker_available};
 
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_qps_accuracy_with_known_query_count() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // This test executes a KNOWN number of queries and verifies QPS is accurate
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-qps-accuracy"))
@@ -127,6 +131,10 @@ async fn test_qps_accuracy_with_known_query_count() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_tps_accuracy_with_known_transaction_count() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-tps-accuracy"))
         .with_version("16".to_string());
@@ -211,6 +219,10 @@ async fn test_tps_accuracy_with_known_transaction_count() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_first_sample_has_zero_rates() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Verify that the FIRST collection always returns 0 for rates
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-first-sample"))
@@ -257,6 +269,10 @@ async fn test_first_sample_has_zero_rates() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_idle_database_shows_minimal_qps() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Test that an idle database shows very low QPS after stabilization
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("pg-idle-qps"))

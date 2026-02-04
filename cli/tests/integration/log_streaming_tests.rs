@@ -9,11 +9,15 @@ use std::time::Duration;
 use tokio::time::sleep;
 use futures::StreamExt;
 
-use crate::common::{create_and_start_container, cleanup_container, unique_container_name};
+use crate::common::{create_and_start_container, cleanup_container, unique_container_name, docker_available};
 
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_log_streaming_postgres() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("postgres-log-test"))
         .with_version("16".to_string());
@@ -42,6 +46,10 @@ async fn test_log_streaming_postgres() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_log_ansi_code_stripping() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("postgres-ansi-test"))
         .with_version("16".to_string());

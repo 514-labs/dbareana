@@ -8,11 +8,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use crate::common::{create_and_start_container, cleanup_container, unique_container_name};
+use crate::common::{create_and_start_container, cleanup_container, unique_container_name, docker_available};
 
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_metrics_collection() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Create and start a PostgreSQL container
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("postgres-metrics-test"))
@@ -72,6 +76,10 @@ async fn test_postgres_metrics_collection() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_mysql_metrics_collection() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Create and start a MySQL container
     let config = ContainerConfig::new(DatabaseType::MySQL).with_name(unique_container_name("mysql-metrics-test"))
         .with_version("8".to_string());
@@ -116,6 +124,10 @@ async fn test_mysql_metrics_collection() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_metrics_rate_calculation() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Create and start a PostgreSQL container
     let config = ContainerConfig::new(DatabaseType::Postgres).with_name(unique_container_name("postgres-rate-test"))
         .with_version("16".to_string());
@@ -160,6 +172,10 @@ async fn test_postgres_metrics_rate_calculation() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_postgres_query_execution_tracking() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     // Create and start a PostgreSQL container
     let config = ContainerConfig::new(DatabaseType::Postgres).with_name(unique_container_name("postgres-query-test"))
         .with_version("16".to_string());
@@ -231,6 +247,10 @@ async fn test_postgres_query_execution_tracking() {
 #[tokio::test]
 #[ignore] // Requires Docker
 async fn test_collector_supports_all_database_types() {
+    if !docker_available().await {
+        eprintln!("Skipping test: Docker not available");
+        return;
+    }
     let docker = Arc::new(Docker::connect_with_local_defaults()
         .expect("Failed to connect to Docker"));
     let collector = DockerDatabaseMetricsCollector::new(docker.clone());
