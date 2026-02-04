@@ -38,7 +38,7 @@ fake = { version = "2.9", features = ["derive", "chrono"] }
 rand_chacha = "0.3"
 hdrhistogram = "7.5"
 governor = "0.6"
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 scraper = "0.19"
 html2text = "0.12"
 flate2 = "1.0"
@@ -46,7 +46,7 @@ zip = "0.6"
 blake3 = "1.5"
 walkdir = "2.5"
 tantivy = "0.22"
-url = "2.5"
+time = "=0.3.36"
 
 [dev-dependencies]
 tempfile = "3.10"

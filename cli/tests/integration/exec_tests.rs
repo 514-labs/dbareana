@@ -10,7 +10,7 @@ use std::time::Duration;
 #[path = "../common/mod.rs"]
 mod common;
 use common::{
-    create_and_start_container, docker_available, execute_query, tempdir, unique_container_name,
+    create_and_start_container, docker_available, execute_query, free_port, tempdir, unique_container_name,
 };
 
 // ============================================================================
@@ -263,11 +263,11 @@ async fn test_exec_list_running_containers() {
     // Create and start multiple containers
     let config1 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-exec-list-1"))
-        .with_port(15440);
+        .with_port(free_port());
 
     let config2 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-exec-list-2"))
-        .with_port(15441);
+        .with_port(free_port());
 
     let container1 = create_and_start_container(config1, Duration::from_secs(60))
         .await
@@ -293,6 +293,9 @@ async fn test_exec_list_running_containers() {
         containers.iter().any(|c| c.id == container2.id),
         "Should find container 2"
     );
+
+    let _ = container1.manager.destroy_container(&container1.id, false).await;
+    let _ = container2.manager.destroy_container(&container2.id, false).await;
 }
 
 // ============================================================================

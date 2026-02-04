@@ -94,7 +94,7 @@ async fn install_pack_inner(pack: &crate::docs::catalog::DocPack, options: Insta
         DocSourceKind::PostgresHtml => {
             postgres::fetch_docs(pack, source_dir.as_deref()).await?
         }
-        DocSourceKind::MySqlInfo => mysql::fetch_docs(pack, source_dir.as_deref()).await?,
+        DocSourceKind::MySqlHtml => mysql::fetch_docs(pack, source_dir.as_deref()).await?,
         DocSourceKind::SqlServerMarkdown => {
             sqlserver::fetch_docs(pack, source_dir.as_deref()).await?
         }

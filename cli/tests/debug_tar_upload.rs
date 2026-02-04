@@ -1,7 +1,65 @@
 /// Debug test for tar upload mechanism
 use bollard::Docker;
-use std::io::Write;
 use tar::{Builder, Header};
+use uuid::Uuid;
+
+use bollard::container::{Config, CreateContainerOptions, RemoveContainerOptions, StartContainerOptions, StopContainerOptions};
+use bollard::image::CreateImageOptions;
+use futures::StreamExt;
+
+async fn ensure_image(docker: &Docker, image: &str) {
+    let options = Some(CreateImageOptions {
+        from_image: image,
+        ..Default::default()
+    });
+    let mut stream = docker.create_image(options, None, None);
+    while let Some(_item) = stream.next().await {}
+}
+
+async fn create_test_container(docker: &Docker) -> String {
+    let image = "alpine:3.19";
+    ensure_image(docker, image).await;
+
+    let name = format!("dbarena-debug-{}", Uuid::new_v4());
+    let config = Config {
+        image: Some(image),
+        cmd: Some(vec!["sleep", "120"]),
+        ..Default::default()
+    };
+
+    let create = docker
+        .create_container(
+            Some(CreateContainerOptions {
+                name,
+                platform: None,
+            }),
+            config,
+        )
+        .await
+        .expect("Failed to create container");
+
+    docker
+        .start_container(&create.id, None::<StartContainerOptions<String>>)
+        .await
+        .expect("Failed to start container");
+
+    create.id
+}
+
+async fn cleanup_container(docker: &Docker, container_id: &str) {
+    let _ = docker
+        .stop_container(container_id, Some(StopContainerOptions { t: 2 }))
+        .await;
+    let _ = docker
+        .remove_container(
+            &container_id,
+            Some(RemoveContainerOptions {
+                force: true,
+                ..Default::default()
+            }),
+        )
+        .await;
+}
 
 #[tokio::test]
 #[ignore]
@@ -9,8 +67,7 @@ async fn debug_tar_upload() {
     // Connect to Docker
     let docker = Docker::connect_with_local_defaults().expect("Failed to connect");
 
-    // Use one of the existing test containers
-    let container_id = "d9c7c1d0b0a3";
+    let container_id = create_test_container(&docker).await;
 
     // Create a simple tar archive
     let mut tar_data = Vec::new();
@@ -34,7 +91,7 @@ async fn debug_tar_upload() {
     // Upload to /tmp
     let result = docker
         .upload_to_container(
-            container_id,
+            &container_id,
             Some(bollard::container::UploadToContainerOptions {
                 path: "/tmp".to_string(),
                 ..Default::default()
@@ -51,7 +108,7 @@ async fn debug_tar_upload() {
     // Check if file exists
     let exec = docker
         .create_exec(
-            container_id,
+            &container_id,
             bollard::exec::CreateExecOptions {
                 cmd: Some(vec!["ls", "-la", "/tmp/"]),
                 attach_stdout: Some(true),
@@ -63,7 +120,6 @@ async fn debug_tar_upload() {
         .expect("Failed to create exec");
 
     use bollard::exec::StartExecResults;
-    use futures::StreamExt;
 
     if let StartExecResults::Attached { output: mut stream, .. } =
         docker.start_exec(&exec.id, None).await.expect("Failed to start exec")
@@ -73,6 +129,8 @@ async fn debug_tar_upload() {
             print!("{}", msg);
         }
     }
+
+    cleanup_container(&docker, &container_id).await;
 }
 
 #[tokio::test]
@@ -81,8 +139,7 @@ async fn debug_tar_upload_with_directory() {
     // Connect to Docker
     let docker = Docker::connect_with_local_defaults().expect("Failed to connect");
 
-    // Use one of the existing test containers
-    let container_id = "d9c7c1d0b0a3";
+    let container_id = create_test_container(&docker).await;
 
     // Create a tar archive with subdirectory
     let mut tar_data = Vec::new();
@@ -106,7 +163,7 @@ async fn debug_tar_upload_with_directory() {
     // Upload to /tmp
     let result = docker
         .upload_to_container(
-            container_id,
+            &container_id,
             Some(bollard::container::UploadToContainerOptions {
                 path: "/tmp".to_string(),
                 ..Default::default()
@@ -123,7 +180,7 @@ async fn debug_tar_upload_with_directory() {
     // Check if directory and file exist
     let exec = docker
         .create_exec(
-            container_id,
+            &container_id,
             bollard::exec::CreateExecOptions {
                 cmd: Some(vec!["ls", "-la", "/tmp/dbarena_init/"]),
                 attach_stdout: Some(true),
@@ -135,7 +192,6 @@ async fn debug_tar_upload_with_directory() {
         .expect("Failed to create exec");
 
     use bollard::exec::StartExecResults;
-    use futures::StreamExt;
 
     if let StartExecResults::Attached { output: mut stream, .. } =
         docker.start_exec(&exec.id, None).await.expect("Failed to start exec")
@@ -145,4 +201,6 @@ async fn debug_tar_upload_with_directory() {
             print!("{}", msg);
         }
     }
+
+    cleanup_container(&docker, &container_id).await;
 }

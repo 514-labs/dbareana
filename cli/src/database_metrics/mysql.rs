@@ -37,7 +37,7 @@ pub async fn collect_metrics(
     {
         for line in conn_output.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() == 2 {
+            if parts.len() >= 2 {
                 match parts[0] {
                     "Threads_connected" => {
                         if let Ok(count) = parts[1].parse::<u64>() {
@@ -74,10 +74,12 @@ pub async fn collect_metrics(
         )
         .await
     {
-        let parts: Vec<&str> = max_conn_output.trim().split_whitespace().collect();
-        if parts.len() == 2 {
-            if let Ok(max_conn) = parts[1].parse::<u64>() {
-                metrics.max_connections = Some(max_conn);
+        for line in max_conn_output.lines() {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() >= 2 && parts[0] == "max_connections" {
+                if let Ok(max_conn) = parts[1].parse::<u64>() {
+                    metrics.max_connections = Some(max_conn);
+                }
             }
         }
     }
@@ -107,7 +109,7 @@ pub async fn collect_metrics(
 
         for line in query_output.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() == 2 {
+            if parts.len() >= 2 {
                 let value = parts[1].parse::<u64>().unwrap_or(0);
                 match parts[0] {
                     "Com_select" => select_count = value,
@@ -218,7 +220,7 @@ pub async fn collect_metrics(
 
         for line in buffer_output.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() == 2 {
+            if parts.len() >= 2 {
                 let value = parts[1].parse::<u64>().unwrap_or(0);
                 match parts[0] {
                     "Innodb_buffer_pool_read_requests" => read_requests = value,

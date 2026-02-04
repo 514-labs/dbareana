@@ -5,7 +5,7 @@ use crate::docs::ids::slugify_version;
 #[derive(Debug, Clone, Copy)]
 pub enum DocSourceKind {
     PostgresHtml,
-    MySqlInfo,
+    MySqlHtml,
     SqlServerMarkdown,
 }
 
@@ -13,7 +13,7 @@ impl DocSourceKind {
     pub fn as_str(&self) -> &'static str {
         match self {
             DocSourceKind::PostgresHtml => "postgres_html",
-            DocSourceKind::MySqlInfo => "mysql_info",
+            DocSourceKind::MySqlHtml => "mysql_html",
             DocSourceKind::SqlServerMarkdown => "sqlserver_markdown",
         }
     }
@@ -97,8 +97,8 @@ const PACKS: &[DocPackDef] = &[
     DocPackDef {
         db: "mysql",
         version: "8.0",
-        source_kind: DocSourceKind::MySqlInfo,
-        source_url: "https://dev.mysql.com/doc/refman/8.0/en/mysql.info.gz",
+        source_kind: DocSourceKind::MySqlHtml,
+        source_url: "https://dev.mysql.com/doc/refman/8.0/en/",
         canonical_base_url: "https://dev.mysql.com/doc/refman/8.0/en/",
         license_name: "MySQL Documentation",
         license_url: "https://dev.mysql.com/doc/refman/8.0/en/",
@@ -107,8 +107,8 @@ const PACKS: &[DocPackDef] = &[
     DocPackDef {
         db: "mysql",
         version: "8.4",
-        source_kind: DocSourceKind::MySqlInfo,
-        source_url: "https://dev.mysql.com/doc/refman/8.4/en/mysql.info.gz",
+        source_kind: DocSourceKind::MySqlHtml,
+        source_url: "https://dev.mysql.com/doc/refman/8.4/en/",
         canonical_base_url: "https://dev.mysql.com/doc/refman/8.4/en/",
         license_name: "MySQL Documentation",
         license_url: "https://dev.mysql.com/doc/refman/8.4/en/",

@@ -10,7 +10,7 @@ use std::time::Duration;
 
 #[path = "../common/mod.rs"]
 mod common;
-use common::{create_and_start_container, create_test_container, docker_available, unique_container_name};
+use common::{create_and_start_container, create_test_container, docker_available, free_port, unique_container_name};
 
 // ============================================================================
 // Multi-Database Health Checking Tests
@@ -180,7 +180,7 @@ async fn test_custom_port_assignment() {
         return;
     }
 
-    let custom_port = 15432;
+    let custom_port = free_port();
     let config = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-custom-port"))
         .with_port(custom_port);
@@ -208,6 +208,8 @@ async fn test_custom_port_assignment() {
         Some(custom_port),
         "Custom port should be assigned"
     );
+
+    let _ = test_container.manager.destroy_container(&test_container.id, false).await;
 }
 
 #[tokio::test]
@@ -275,8 +277,8 @@ async fn test_dbarena_label_present() {
 
     let labels = inspect.config.and_then(|c| c.labels).unwrap_or_default();
     assert!(
-        labels.contains_key("dbarena-managed"),
-        "Container should have dbarena-managed label"
+        labels.contains_key("dbarena.managed"),
+        "Container should have dbarena.managed label"
     );
 }
 
@@ -361,12 +363,12 @@ async fn test_multiple_postgres_versions() {
     let config1 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-pg-16"))
         .with_version("16".to_string())
-        .with_port(15432);
+        .with_port(free_port());
 
     let config2 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-pg-15"))
         .with_version("15".to_string())
-        .with_port(15433);
+        .with_port(free_port());
 
     let container1 = create_and_start_container(config1, Duration::from_secs(60))
         .await
@@ -393,6 +395,9 @@ async fn test_multiple_postgres_versions() {
 
     assert!(info1.name.contains("16"), "First container should be version 16");
     assert!(info2.name.contains("15"), "Second container should be version 15");
+
+    let _ = container1.manager.destroy_container(&container1.id, false).await;
+    let _ = container2.manager.destroy_container(&container2.id, false).await;
 }
 
 // ============================================================================

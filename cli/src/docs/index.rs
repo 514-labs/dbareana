@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use tantivy::schema::{FacetOptions, Field, Schema, TextFieldIndexing, TextOptions, STORED, STRING, TEXT};
-use tantivy::{Document, Index};
+use tantivy::schema::{FacetOptions, Field, Schema, TextFieldIndexing, TextOptions, STORED, STRING};
+use tantivy::{Index, TantivyDocument};
 
 use crate::docs::manifest::DocChunk;
 use crate::error::{DBArenaError, Result};
@@ -27,7 +27,7 @@ pub fn build_index(index_dir: &Path, db: &str, version: &str, chunks: &[DocChunk
         .map_err(|e| DBArenaError::DocsError(format!("Failed to create index writer: {}", e)))?;
 
     for chunk in chunks {
-        let mut doc = Document::default();
+        let mut doc = TantivyDocument::default();
         doc.add_text(fields.doc_id, &chunk.doc_id);
         doc.add_facet(fields.db, tantivy::schema::Facet::from(&format!("/{}", db)));
         doc.add_facet(fields.version, tantivy::schema::Facet::from(&format!("/{}", version)));
@@ -35,7 +35,9 @@ pub fn build_index(index_dir: &Path, db: &str, version: &str, chunks: &[DocChunk
         doc.add_text(fields.section_path, &chunk.section_path);
         doc.add_text(fields.body, &chunk.body);
         doc.add_text(fields.source_url, &chunk.source_url);
-        writer.add_document(doc);
+        writer
+            .add_document(doc)
+            .map_err(|e| DBArenaError::DocsError(format!("Failed to add document: {}", e)))?;
     }
 
     writer

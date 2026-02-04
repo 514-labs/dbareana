@@ -1,6 +1,6 @@
 use console::style;
 
-use crate::docs::catalog::{DocCatalog, DocPackSummary};
+use crate::docs::catalog::{normalize_db_name, DocCatalog, DocPackSummary};
 use crate::docs::installer::{install_pack, InstallOptions};
 use crate::docs::paths::{pack_index_dir, pack_dir};
 use crate::docs::search::search_pack;
@@ -10,6 +10,12 @@ use crate::error::{DBArenaError, Result};
 
 /// Handle docs list command
 pub async fn handle_docs_list(installed_only: bool, available_only: bool, json: bool) -> Result<()> {
+    let mut installed_only = installed_only;
+    let mut available_only = available_only;
+    if installed_only && available_only {
+        installed_only = false;
+        available_only = false;
+    }
     let available = DocCatalog::available();
     let installed = list_installed_manifests()?;
 
@@ -67,6 +73,7 @@ pub async fn handle_docs_install(
     keep_source: bool,
     accept_license: bool,
 ) -> Result<()> {
+    let db = normalize_db_name(&db);
     let options = InstallOptions {
         force,
         keep_source,
@@ -92,6 +99,7 @@ pub async fn handle_docs_search(
     limit: usize,
     json: bool,
 ) -> Result<()> {
+    let db = normalize_db_name(&db);
     let index_dir = pack_index_dir(&db, &version);
     if !index_dir.exists() {
         return Err(DBArenaError::DocsError(format!(
@@ -133,7 +141,7 @@ pub async fn handle_docs_show(doc_id: String, max_chars: usize, json: bool) -> R
         DBArenaError::DocsError("Invalid doc_id format".to_string())
     })?;
     let found = find_pack_by_slug(&db, &version_slug)?;
-    let (manifest, pack_root) = found.ok_or_else(|| {
+    let (_manifest, pack_root) = found.ok_or_else(|| {
         DBArenaError::DocsError(format!(
             "No installed pack found for {} {}",
             db, version_slug
@@ -164,6 +172,7 @@ pub async fn handle_docs_show(doc_id: String, max_chars: usize, json: bool) -> R
 
 /// Handle docs remove command
 pub async fn handle_docs_remove(db: String, version: String, yes: bool) -> Result<()> {
+    let db = normalize_db_name(&db);
     let dir = pack_dir(&db, &version);
     if !dir.exists() {
         return Err(DBArenaError::DocsError(format!(

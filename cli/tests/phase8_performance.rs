@@ -17,31 +17,39 @@ use tokio::runtime::Runtime;
 
 #[path = "common/mod.rs"]
 mod common;
-use common::{cleanup_container, create_and_start_container, docker_available, execute_query};
+use common::{cleanup_container, create_and_start_container, docker_available, execute_query, TestContainer};
+
+fn perf_tests_enabled() -> bool {
+    std::env::var("DBARENA_RUN_PERF_TESTS").is_ok()
+}
 
 /// Test helper to create a test container
 async fn create_test_container(
     db_type: DatabaseType,
     name: &str,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<TestContainer> {
     let config = ContainerConfig::new(db_type)
         .with_name(name.to_string())
         .with_memory_limit(1024);
 
     let test_container = create_and_start_container(config, Duration::from_secs(90)).await?;
-    Ok(test_container.id)
+    Ok(test_container)
 }
 
 /// Test helper to destroy a test container
-async fn destroy_test_container(container_id: &str) -> anyhow::Result<()> {
-    cleanup_container(container_id)
-        .await
+async fn destroy_test_container(container: &TestContainer) -> anyhow::Result<()> {
+    cleanup_container(&container.id).await
 }
 
 /// NFR Test: Seed 100,000 rows in <60 seconds
 #[test]
 #[ignore] // Run with: cargo test --test phase8_performance -- --ignored
 fn test_seeding_performance_100k_rows() {
+    if !perf_tests_enabled() {
+        eprintln!("Skipping performance test: set DBARENA_RUN_PERF_TESTS=1 to run.");
+        return;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Seed 100K rows in <60s");
@@ -51,9 +59,10 @@ fn test_seeding_performance_100k_rows() {
         }
 
         // Create test container
-        let container_id = create_test_container(DatabaseType::Postgres, "test-seed-perf")
+        let test_container = create_test_container(DatabaseType::Postgres, "test-seed-perf")
             .await
             .expect("Failed to create test container");
+        let container_id = test_container.id.clone();
 
         let create_table_sql = r#"
             CREATE TABLE IF NOT EXISTS test_users (
@@ -139,7 +148,7 @@ type = "now"
         );
 
         // Cleanup
-        destroy_test_container(&container_id).await.ok();
+        destroy_test_container(&test_container).await.ok();
     });
 }
 
@@ -147,6 +156,11 @@ type = "now"
 #[test]
 #[ignore]
 fn test_workload_tps_accuracy() {
+    if !perf_tests_enabled() {
+        eprintln!("Skipping performance test: set DBARENA_RUN_PERF_TESTS=1 to run.");
+        return;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Workload TPS accuracy (target 100 TPS, ±10%)");
@@ -156,9 +170,10 @@ fn test_workload_tps_accuracy() {
         }
 
         // Create test container
-        let container_id = create_test_container(DatabaseType::Postgres, "test-workload-tps")
+        let test_container = create_test_container(DatabaseType::Postgres, "test-workload-tps")
             .await
             .expect("Failed to create test container");
+        let container_id = test_container.id.clone();
 
         // Create simple schema
         let create_table_sql = r#"
@@ -228,7 +243,7 @@ fn test_workload_tps_accuracy() {
         );
 
         // Cleanup
-        destroy_test_container(&container_id).await.ok();
+        destroy_test_container(&test_container).await.ok();
     });
 }
 
@@ -236,6 +251,11 @@ fn test_workload_tps_accuracy() {
 #[test]
 #[ignore]
 fn test_workload_latency_p99() {
+    if !perf_tests_enabled() {
+        eprintln!("Skipping performance test: set DBARENA_RUN_PERF_TESTS=1 to run.");
+        return;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Testing: Workload latency p99 <100ms");
@@ -244,9 +264,10 @@ fn test_workload_latency_p99() {
             return;
         }
 
-        let container_id = create_test_container(DatabaseType::Postgres, "test-latency")
+        let test_container = create_test_container(DatabaseType::Postgres, "test-latency")
             .await
             .expect("Failed to create test container");
+        let container_id = test_container.id.clone();
 
         // Create test table
         let create_table_sql = r#"
@@ -302,7 +323,7 @@ fn test_workload_latency_p99() {
         );
 
         // Cleanup
-        destroy_test_container(&container_id).await.ok();
+        destroy_test_container(&test_container).await.ok();
     });
 }
 
@@ -310,6 +331,11 @@ fn test_workload_latency_p99() {
 #[test]
 #[ignore]
 fn test_seeding_scale_1m_rows() {
+    if !perf_tests_enabled() {
+        eprintln!("Skipping performance test: set DBARENA_RUN_PERF_TESTS=1 to run.");
+        return;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Scale Test: Seed 1M rows (stability)");
@@ -318,9 +344,10 @@ fn test_seeding_scale_1m_rows() {
             return;
         }
 
-        let container_id = create_test_container(DatabaseType::Postgres, "test-seed-scale")
+        let test_container = create_test_container(DatabaseType::Postgres, "test-seed-scale")
             .await
             .expect("Failed to create test container");
+        let container_id = test_container.id.clone();
 
         let create_table_sql = r#"
             CREATE TABLE IF NOT EXISTS large_test (
@@ -382,7 +409,7 @@ template = "data_{random_int:1:999999}"
         assert_eq!(stats[0].rows_inserted, 1_000_000);
 
         // Cleanup
-        destroy_test_container(&container_id).await.ok();
+        destroy_test_container(&test_container).await.ok();
     });
 }
 
@@ -390,6 +417,11 @@ template = "data_{random_int:1:999999}"
 #[test]
 #[ignore]
 fn test_workload_long_duration() {
+    if !perf_tests_enabled() {
+        eprintln!("Skipping performance test: set DBARENA_RUN_PERF_TESTS=1 to run.");
+        return;
+    }
+
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         println!("\n🧪 Stability Test: 5-minute workload");
@@ -398,9 +430,10 @@ fn test_workload_long_duration() {
             return;
         }
 
-        let container_id = create_test_container(DatabaseType::Postgres, "test-stability")
+        let test_container = create_test_container(DatabaseType::Postgres, "test-stability")
             .await
             .expect("Failed to create test container");
+        let container_id = test_container.id.clone();
 
         // Create test schema
         let create_table_sql = r#"
@@ -461,6 +494,6 @@ fn test_workload_long_duration() {
         );
 
         // Cleanup
-        destroy_test_container(&container_id).await.ok();
+        destroy_test_container(&test_container).await.ok();
     });
 }

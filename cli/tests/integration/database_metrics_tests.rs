@@ -82,7 +82,7 @@ async fn test_mysql_metrics_collection() {
     }
     // Create and start a MySQL container
     let config = ContainerConfig::new(DatabaseType::MySQL).with_name(unique_container_name("mysql-metrics-test"))
-        .with_version("8".to_string());
+        .with_version("8.0".to_string());
 
     let container = create_and_start_container(config, Duration::from_secs(90))
         .await

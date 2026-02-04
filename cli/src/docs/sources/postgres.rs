@@ -9,23 +9,25 @@ use crate::docs::normalize::normalize_html;
 use crate::docs::sources::NormalizedDoc;
 use crate::error::{DBArenaError, Result};
 
-const MAX_PAGES: usize = 1000;
+const DEFAULT_MAX_PAGES: usize = 1000;
 
 pub async fn fetch_docs(pack: &DocPack, source_dir: Option<&Path>) -> Result<Vec<NormalizedDoc>> {
     let base_url = Url::parse(&pack.source_url)
         .map_err(|e| DBArenaError::DocsError(format!("Invalid base URL: {}", e)))?;
     let client = reqwest::Client::builder()
-        .user_agent("dbarena-docs/0.7.0")
+        .user_agent("curl/7.79.1")
+        .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| DBArenaError::DocsError(format!("Failed to build HTTP client: {}", e)))?;
 
+    let max_pages = max_pages();
     let mut queue = VecDeque::new();
     queue.push_back(base_url.clone());
     let mut visited: HashSet<String> = HashSet::new();
     let mut docs = Vec::new();
 
     while let Some(url) = queue.pop_front() {
-        if visited.len() >= MAX_PAGES {
+        if visited.len() >= max_pages {
             break;
         }
         let url_str = url.to_string();
@@ -75,6 +77,13 @@ pub async fn fetch_docs(pack: &DocPack, source_dir: Option<&Path>) -> Result<Vec
     Ok(docs)
 }
 
+fn max_pages() -> usize {
+    std::env::var("DBARENA_DOCS_MAX_PAGES")
+        .ok()
+        .and_then(|val| val.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_MAX_PAGES)
+}
+
 fn extract_links(html: &str, base_url: &Url, version: &str) -> Vec<Url> {
     let mut links = Vec::new();
     let selector = Selector::parse("a[href]").unwrap();
@@ -84,7 +93,7 @@ fn extract_links(html: &str, base_url: &Url, version: &str) -> Vec<Url> {
             if let Ok(mut url) = base_url.join(href) {
                 url.set_fragment(None);
                 url.set_query(None);
-                if !is_allowed(url.as_ref(), base_url, version) {
+                if !is_allowed(&url, base_url, version) {
                     continue;
                 }
                 links.push(url);
