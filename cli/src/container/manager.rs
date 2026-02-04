@@ -69,6 +69,21 @@ impl ContainerManager {
             config.database.as_str().to_string(),
         );
         labels.insert("dbarena.version".to_string(), config.version.clone());
+        if !config.init_scripts.is_empty() {
+            let scripts: Vec<String> = config
+                .init_scripts
+                .iter()
+                .map(|p| p.to_string_lossy().to_string())
+                .collect();
+            labels.insert(
+                "dbarena.init_scripts".to_string(),
+                serde_json::to_string(&scripts)?,
+            );
+            labels.insert(
+                "dbarena.init_scripts.continue_on_error".to_string(),
+                config.continue_on_error.to_string(),
+            );
+        }
 
         // Create container configuration
         let container_config = Config {

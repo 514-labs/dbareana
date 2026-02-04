@@ -17,7 +17,9 @@ Covered commands:
 
 ### Exec / Query
 - Uses Docker exec to run commands inside containers.
-- Supports parallel execution across multiple containers.
+- Supports parallel execution across multiple containers (`--parallel`).
+- Supports targeting all containers (`--all`) or matching by name pattern (`--filter`).
+- Supports optional user and working directory overrides (`--user`, `--workdir`).
 
 ### Snapshots
 - Snapshots stored as Docker images with metadata labels.
@@ -27,7 +29,8 @@ Covered commands:
 - Thin wrappers over Docker primitives with dbarena-friendly output.
 
 ### Templates
-- Templates are stored locally and can be exported/imported as files.
+- Templates are stored locally (TOML) and can be exported/imported as files.
+- Template capture includes env vars, mounts, and network details where available.
 
 ## CLI Examples
 
@@ -42,5 +45,5 @@ dbarena volume create pgdata --mount-path /var/lib/postgresql/data
 dbarena network create dbnet --subnet 172.20.0.0/16
 
 dbarena template save my-postgres --name baseline-pg
-dbarena template export baseline-pg --path ./baseline-pg.json
+dbarena template export baseline-pg --path ./baseline-pg.toml
 ```

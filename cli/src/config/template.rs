@@ -1,4 +1,4 @@
-use crate::container::{ContainerConfig, DatabaseType};
+use crate::container::{ContainerConfig, DatabaseType, VolumeMount};
 use crate::{DBArenaError, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,6 +31,9 @@ pub struct TemplateConfig {
     pub init_scripts: Vec<String>,
 
     #[serde(default)]
+    pub volumes: Vec<VolumeMount>,
+
+    #[serde(default)]
     pub network: Option<String>,
 
     #[serde(default)]
@@ -60,6 +63,7 @@ impl Template {
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect(),
+                volumes: config.volumes.clone(),
                 network: None, // TODO: get from container
                 network_aliases: Vec::new(), // TODO: get from container
             },
@@ -91,7 +95,7 @@ impl Template {
                 .map(PathBuf::from)
                 .collect(),
             continue_on_error: false,
-            volumes: Vec::new(),
+            volumes: self.config.volumes.clone(),
         })
     }
 }

@@ -45,6 +45,8 @@ Default versions:
   - `dbarena.managed=true`
   - `dbarena.database=<db>`
   - `dbarena.version=<version>`
+  - `dbarena.init_scripts=<json array>` (only when init scripts are provided)
+  - `dbarena.init_scripts.continue_on_error=<true|false>` (only when init scripts are provided)
 - Default container env vars:
   - Postgres: `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=postgres`, `POSTGRES_DB=testdb`
   - MySQL: `MYSQL_ROOT_PASSWORD=mysql`, `MYSQL_DATABASE=testdb`
@@ -91,6 +93,15 @@ Supported formats: **TOML** / **YAML**. Load precedence:
 `create` supports `--init-script` (repeatable) plus:
 - `--continue-on-error` (per create)
 - logs written to `~/.local/share/dbarena/logs/`
+
+## Utility Command Notes
+- `query` accepts either a positional container name/ID or `--container <name>`.
+- `snapshot` accepts either positional snapshot identifiers or `--snapshot <id|name>`.
+- `snapshot create` accepts positional container name or `--container <name>`.
+
+## Templates
+- `template save` captures env vars, init script labels (if present), resource limits, network info, and volume mounts from Docker inspect.
+- Templates are stored as TOML under `~/.local/share/dbarena/templates/`.
 
 ---
 
