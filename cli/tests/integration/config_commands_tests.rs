@@ -48,7 +48,7 @@ async fn test_config_validate_with_warnings() {
 
     let config_content = r#"
 [defaults]
-memory_mb = 50  # Too low - should generate warning
+memory_mb = 2000000  # Very large - should generate warning
 
 [databases.postgres.env]
 POSTGRES_DB = "testdb"
