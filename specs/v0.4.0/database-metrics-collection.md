@@ -4,6 +4,8 @@
 
 Collects database-specific performance metrics including query execution statistics, connection pool status, transaction rates, and replication lag. Provides deep visibility into database behavior beyond basic resource monitoring, enabling performance analysis and CDC-specific monitoring.
 
+**Status:** Implemented. CLI command name is `dbarena` (legacy examples may still show `simdb`). See `specs/IMPLEMENTATION_TRUTH.md`.
+
 ## Problem Statement
 
 Resource metrics (CPU, memory, disk) don't tell the full story of database performance:

@@ -1,0 +1,24 @@
+# Custom Operation Mix Workload
+#
+# Demonstrates how to define a custom operation mix with specific weights.
+# This example creates a read-heavy analytics workload with complex queries.
+#
+# Usage: dbarena workload run --config workload-custom-mix.toml --container mydb
+
+name = "Custom Analytics Workload"
+tables = ["orders", "customers", "products", "order_items"]
+connections = 20
+target_tps = 50
+duration_seconds = 600  # 10 minutes
+
+# Custom operation weights (must sum to 1.0)
+[custom_operations]
+select_weight = 0.85      # 85% reads
+insert_weight = 0.05      # 5% inserts
+update_weight = 0.08      # 8% updates
+delete_weight = 0.02      # 2% deletes
+
+# Query complexity controls
+use_joins = true           # Include JOIN queries
+use_aggregations = true    # Include SUM/COUNT/AVG queries
+avg_result_set_size = 1000 # Expected average result size

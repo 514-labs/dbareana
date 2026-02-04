@@ -2,7 +2,11 @@
 
 ## Release Summary
 
-This release completes the CDC testing workflow by adding change event monitoring capabilities. Users can now inspect change events in real-time, visualize event rates, filter change streams, and monitor replication lag. This version ties together all previous features to provide a complete end-to-end CDC testing platform.
+This release adds change event monitoring capabilities. Users can inspect change events in real-time, visualize event rates, filter change streams, and monitor replication lag. CDC configuration is assumed to be performed externally.
+
+## Status
+
+**Planned**
 
 ## Key Features
 
@@ -15,7 +19,7 @@ This release completes the CDC testing workflow by adding change event monitorin
 
 ## Value Proposition
 
-This release completes the simDB CDC testing platform. Users can now:
+This release completes the dbarena CDC testing platform. Users can now:
 - Verify CDC is capturing all change events correctly
 - Measure CDC throughput and identify performance limits
 - Debug CDC issues by inspecting individual change events
@@ -34,21 +38,20 @@ This release completes the simDB CDC testing platform. Users can now:
 
 **Previous Versions:**
 - v0.1.0 (Docker Container Management)
-- v0.2.0 (Configuration Management System)
+- v0.2.0 (Configuration + Init Scripts)
 - v0.3.0 (Resource Monitoring)
 - v0.4.0 (Database Metrics + TUI)
-- v0.5.0 (Data Seeding)
-- v0.6.0 (Workload Generation)
-- v0.7.0 (CDC Configuration Support)
+- v0.5.0 (Data Seeding + Workload Generation)
+- v0.6.0 (Utilities & State Management)
+- v0.7.0 (Database Docs + Search)
 
-**Complete CDC Workflow Now Available:**
+**Complete CDC Workflow Now Available (requires external CDC setup):**
 1. Create database container (v0.1.0)
-2. Deploy schema (v0.2.0)
-3. Enable CDC (v0.7.0)
-4. Seed data (v0.5.0)
-5. Generate workload (v0.6.0)
-6. Monitor changes (v0.8.0)
-7. View metrics in TUI (v0.4.0)
+2. Apply configuration / init scripts (v0.2.0)
+3. Configure CDC externally (DB-native or `dbarena exec/query`)
+4. Seed data + generate workload (v0.5.0)
+5. Monitor changes (v0.8.0)
+6. View metrics in TUI (v0.4.0)
 
 ## Success Criteria
 

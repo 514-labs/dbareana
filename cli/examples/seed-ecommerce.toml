@@ -1,0 +1,159 @@
+# E-Commerce Seed Configuration
+#
+# Demonstrates foreign key relationships and realistic e-commerce data.
+# Creates users, products, orders, and order_items with proper referential integrity.
+#
+# Schema Required:
+#   CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(255), name VARCHAR(255), created_at TIMESTAMP);
+#   CREATE TABLE products (id SERIAL PRIMARY KEY, name VARCHAR(255), price DECIMAL(10,2), stock INT, category VARCHAR(100));
+#   CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INT REFERENCES users(id), total DECIMAL(10,2), status VARCHAR(50), created_at TIMESTAMP);
+#   CREATE TABLE order_items (id SERIAL PRIMARY KEY, order_id INT REFERENCES orders(id), product_id INT REFERENCES products(id), quantity INT, price DECIMAL(10,2));
+#
+# Usage: dbarena seed --config seed-ecommerce.toml --container mydb --size medium
+
+global_seed = 42
+batch_size = 1000
+
+# Users - 1,000 customers
+[[seed_rules.tables]]
+name = "users"
+count = 1000
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "email"
+generator = "email"
+
+[[seed_rules.tables.columns]]
+name = "name"
+generator = "name"
+[seed_rules.tables.columns.options]
+type = "full"
+
+[[seed_rules.tables.columns]]
+name = "created_at"
+generator = "timestamp"
+[seed_rules.tables.columns.options]
+type = "range"
+start = "2024-01-01"
+end = "2026-01-01"
+
+# Products - 500 products across categories
+[[seed_rules.tables]]
+name = "products"
+count = 500
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "name"
+generator = "template"
+[seed_rules.tables.columns.options]
+template = "Product {random_int:1000:9999}"
+
+[[seed_rules.tables.columns]]
+name = "price"
+generator = "random_decimal"
+[seed_rules.tables.columns.options]
+min = 9.99
+max = 999.99
+precision = 2
+
+[[seed_rules.tables.columns]]
+name = "stock"
+generator = "random_int"
+[seed_rules.tables.columns.options]
+min = 0
+max = 1000
+
+[[seed_rules.tables.columns]]
+name = "category"
+generator = "enum"
+[seed_rules.tables.columns.options]
+values = ["Electronics", "Clothing", "Home", "Books", "Toys", "Sports"]
+
+# Orders - 5,000 orders
+[[seed_rules.tables]]
+name = "orders"
+count = 5000
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "user_id"
+generator = "foreign_key"
+[seed_rules.tables.columns.options]
+references = { table = "users", column = "id" }
+
+[[seed_rules.tables.columns]]
+name = "total"
+generator = "random_decimal"
+[seed_rules.tables.columns.options]
+min = 10.0
+max = 1000.0
+precision = 2
+
+[[seed_rules.tables.columns]]
+name = "status"
+generator = "enum"
+[seed_rules.tables.columns.options]
+values = ["pending", "processing", "shipped", "delivered", "cancelled"]
+
+[[seed_rules.tables.columns]]
+name = "created_at"
+generator = "timestamp"
+[seed_rules.tables.columns.options]
+type = "range"
+start = "2024-01-01"
+end = "2026-01-25"
+
+# Order Items - 15,000 items (average 3 per order)
+[[seed_rules.tables]]
+name = "order_items"
+count = 15000
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "order_id"
+generator = "foreign_key"
+[seed_rules.tables.columns.options]
+references = { table = "orders", column = "id" }
+
+[[seed_rules.tables.columns]]
+name = "product_id"
+generator = "foreign_key"
+[seed_rules.tables.columns.options]
+references = { table = "products", column = "id" }
+
+[[seed_rules.tables.columns]]
+name = "quantity"
+generator = "random_int"
+[seed_rules.tables.columns.options]
+min = 1
+max = 5
+
+[[seed_rules.tables.columns]]
+name = "price"
+generator = "random_decimal"
+[seed_rules.tables.columns.options]
+min = 9.99
+max = 999.99
+precision = 2

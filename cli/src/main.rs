@@ -1,5 +1,5 @@
 use clap::Parser;
-use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, network, query, snapshot, start, stats, stop, template, volume};
+use dbarena::cli::commands::{config, create, destroy, exec, init_cmd, inspect, list, logs, network, query, seed, snapshot, start, stats, stop, template, volume, workload};
 use dbarena::cli::interactive::{show_main_menu, MainMenuChoice};
 use dbarena::cli::{Cli, Commands, ConfigCommands, InitCommands, NetworkCommands, SnapshotCommands, TemplateCommands, VolumeCommands};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -283,6 +283,46 @@ async fn run() -> anyhow::Result<()> {
                 network::handle_network_disconnect(net, container).await
             }
         },
+        Commands::Seed {
+            container,
+            config,
+            size,
+            seed: seed_value,
+            truncate,
+            incremental,
+            rows,
+        } => {
+            seed::handle_seed(
+                config,
+                container,
+                size,
+                seed_value,
+                truncate,
+                incremental,
+                rows,
+            )
+            .await
+        }
+        Commands::Workload {
+            container,
+            pattern,
+            config,
+            connections,
+            tps,
+            duration,
+            transactions,
+        } => {
+            workload::handle_workload_run(
+                container,
+                pattern,
+                config,
+                connections,
+                tps,
+                duration,
+                transactions,
+            )
+            .await
+        }
         Commands::Template(template_cmd) => match template_cmd {
             TemplateCommands::Save { container, name, description } => {
                 template::handle_template_save(container, name, description).await

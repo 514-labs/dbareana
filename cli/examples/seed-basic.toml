@@ -1,0 +1,36 @@
+# Basic Seed Configuration Example
+#
+# This is a minimal example showing how to seed a single table.
+# Perfect for getting started with dbarena seeding.
+#
+# Usage: dbarena seed --config seed-basic.toml --container mydb
+
+global_seed = 42
+batch_size = 1000
+
+# Simple users table
+[[seed_rules.tables]]
+name = "users"
+count = 100
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "email"
+generator = "email"
+
+[[seed_rules.tables.columns]]
+name = "name"
+generator = "name"
+[seed_rules.tables.columns.options]
+type = "full"
+
+[[seed_rules.tables.columns]]
+name = "created_at"
+generator = "timestamp"
+[seed_rules.tables.columns.options]
+type = "now"

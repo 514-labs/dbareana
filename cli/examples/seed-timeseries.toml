@@ -1,0 +1,67 @@
+# Time-Series IoT Seed Configuration
+#
+# Demonstrates high-volume sensor data with time-series characteristics.
+# Suitable for testing IoT, logging, and time-series workloads.
+#
+# Schema Required:
+#   CREATE TABLE devices (id SERIAL PRIMARY KEY, device_type VARCHAR(50), location VARCHAR(255));
+#   CREATE TABLE readings (id SERIAL PRIMARY KEY, device_id INT REFERENCES devices(id), value DECIMAL(10,2), timestamp TIMESTAMP);
+#
+# Usage: dbarena seed --config seed-timeseries.toml --container mydb --size large
+
+global_seed = 123
+batch_size = 5000  # Larger batch for high-volume inserts
+
+# Devices - 100 IoT devices
+[[seed_rules.tables]]
+name = "devices"
+count = 100
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "device_type"
+generator = "enum"
+[seed_rules.tables.columns.options]
+values = ["temperature", "humidity", "pressure", "motion", "light", "sound"]
+
+[[seed_rules.tables.columns]]
+name = "location"
+generator = "address"
+
+# Readings - 100,000 sensor readings
+[[seed_rules.tables]]
+name = "readings"
+count = 100000
+
+[[seed_rules.tables.columns]]
+name = "id"
+generator = "sequential"
+[seed_rules.tables.columns.options]
+start = 1
+
+[[seed_rules.tables.columns]]
+name = "device_id"
+generator = "foreign_key"
+[seed_rules.tables.columns.options]
+references = { table = "devices", column = "id" }
+
+[[seed_rules.tables.columns]]
+name = "value"
+generator = "random_decimal"
+[seed_rules.tables.columns.options]
+min = -50.0
+max = 150.0
+precision = 2
+
+[[seed_rules.tables.columns]]
+name = "timestamp"
+generator = "timestamp"
+[seed_rules.tables.columns.options]
+type = "range"
+start = "2026-01-01"
+end = "2026-01-25"

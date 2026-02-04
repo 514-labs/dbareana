@@ -4,6 +4,8 @@
 
 Provides programmatic Docker container management for database instances, enabling users to spin up, monitor, and tear down database containers through the simDB CLI. This feature abstracts Docker complexity and provides a database-focused interface for container lifecycle operations.
 
+**Status:** Implemented. CLI command name is `dbarena` (not `simdb`). See `specs/IMPLEMENTATION_TRUTH.md` for exact behavior.
+
 **Performance Focus:** Optimized for rapid iteration with <5 second warm startup times. See [DOCKER_OPTIMIZATION.md](../DOCKER_OPTIMIZATION.md) for complete optimization strategy.
 
 ## Problem Statement

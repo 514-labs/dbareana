@@ -4,6 +4,10 @@
 
 Real-time monitoring system for CDC change events, providing visibility into captured database changes across PostgreSQL, MySQL, and SQL Server. Enables inspection, filtering, and analysis of change streams to validate CDC behavior and diagnose issues.
 
+## Prerequisites
+
+CDC must be configured **externally** (via database-native configuration, container startup flags, or `dbarena exec/query`). dbarena does **not** automate CDC configuration.
+
 ## Problem Statement
 
 CDC systems capture database changes, but validating correct behavior requires:

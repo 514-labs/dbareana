@@ -1,0 +1,19 @@
+# E-Commerce Workload Configuration
+#
+# Simulates shopping activity including browsing, cart management, and checkout.
+# Designed to work with seed-ecommerce.toml data.
+#
+# Pattern Characteristics:
+# - 50% SELECT (product browsing, order history)
+# - 25% INSERT (new orders, cart items)
+# - 20% UPDATE (cart updates, inventory changes)
+# - 5% DELETE (cart cleanup)
+#
+# Usage: dbarena workload run --config workload-ecommerce.toml --container mydb
+
+name = "E-commerce Shopping Simulation"
+pattern = "ecommerce"
+tables = ["users", "products", "orders", "order_items"]
+connections = 50      # 50 concurrent shoppers
+target_tps = 100      # 100 transactions per second
+duration_seconds = 300  # Run for 5 minutes

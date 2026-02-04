@@ -4,6 +4,8 @@
 
 Establishes the core command-line interface architecture for simDB, providing an interactive and intuitive user experience for managing database instances. Built with Rust, the CLI offers type-safe command parsing, clear error handling, and a foundation for future TUI integration.
 
+**Status:** Implemented. CLI command name is `dbarena` (not `simdb`). See `specs/IMPLEMENTATION_TRUTH.md` for exact behavior.
+
 ## Problem Statement
 
 Database testing tools often have steep learning curves with complex command structures or require manual configuration file editing. Users need:

@@ -323,44 +323,44 @@ impl ForeignKeyResolver {
 
 ```bash
 # Seed database from configuration
-simdb seed --config <config-file> --container <name>
+dbarena seed --config <config-file> --container <name>
 
 # Seed with specific size preset
-simdb seed --config <config-file> --container <name> --size medium
+dbarena seed --config <config-file> --container <name> --size medium
 
 # Seed with custom row counts
-simdb seed --config <config-file> --container <name> --rows users=1000,orders=5000
+dbarena seed --config <config-file> --container <name> --rows users=1000,orders=5000
 
 # Seed with deterministic seed for reproducibility
-simdb seed --config <config-file> --container <name> --seed 12345
+dbarena seed --config <config-file> --container <name> --seed 12345
 
 # Incremental seeding (add to existing data)
-simdb seed --config <config-file> --container <name> --incremental
+dbarena seed --config <config-file> --container <name> --incremental
 
 # Truncate tables before seeding
-simdb seed --config <config-file> --container <name> --truncate
+dbarena seed --config <config-file> --container <name> --truncate
 ```
 
 ### Example Usage
 
 ```bash
 # Seed using configuration
-$ simdb seed --config my-schema.toml --container simdb-postgres-16-a3f9 --size small
-Seeding database: simdb-postgres-16-a3f9
+$ dbarena seed --config my-seed.toml --container dbarena-postgres-16-a3f9 --size small
+Seeding database: dbarena-postgres-16-a3f9
   ✓ Analyzing schema (2 tables, 1 foreign key)
   ✓ users: 1000 rows (100%) [=================] 2.3s
   ✓ orders: 5000 rows (100%) [=================] 8.7s
 Seeding complete! 6000 total rows in 11.2s
 
 # Seed with custom seed value for reproducibility
-$ simdb seed --config my-schema.toml --container simdb-postgres-16-a3f9 --seed 42
+$ dbarena seed --config my-seed.toml --container dbarena-postgres-16-a3f9 --seed 42
 Using seed: 42 (use this value to reproduce exact data)
-Seeding database: simdb-postgres-16-a3f9
+Seeding database: dbarena-postgres-16-a3f9
   ...
 
 # Large dataset
-$ simdb seed --config my-schema.toml --container simdb-postgres-16-a3f9 --size large
-Seeding database: simdb-postgres-16-a3f9
+$ dbarena seed --config my-seed.toml --container dbarena-postgres-16-a3f9 --size large
+Seeding database: dbarena-postgres-16-a3f9
   ✓ users: 10000 rows (100%) [=================] 18.5s
   ✓ orders: 100000 rows (100%) [===============] 125.3s
 Seeding complete! 110000 total rows in 144.1s

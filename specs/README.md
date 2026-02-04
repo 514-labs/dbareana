@@ -1,14 +1,15 @@
-# simDB Specifications
+# dbarena Specifications
 
 ## Overview
 
-This directory contains the complete versioned specifications for simDB, a Docker-centric database simulation environment designed for rapid CDC (Change Data Capture) testing across PostgreSQL, MySQL, and SQL Server.
+This directory contains the versioned specifications for **dbarena**, a Docker-centric database simulation environment.
 
 ## Directory Structure
 
 ```
 specs/
 ├── OVERVIEW.md                    # Master roadmap and project vision
+├── IMPLEMENTATION_TRUTH.md        # Code-derived truth reference
 ├── DOCKER_OPTIMIZATION.md         # Performance and optimization strategies
 ├── README.md                      # This file
 │
@@ -17,7 +18,7 @@ specs/
 │   ├── docker-container-management.md
 │   └── rust-cli-foundation.md
 │
-├── v0.2.0/                        # Configuration Management
+├── v0.2.0/                        # Config + Init Scripts
 │   ├── VERSION_OVERVIEW.md
 │   └── configuration-management-system.md
 │
@@ -25,22 +26,23 @@ specs/
 │   ├── VERSION_OVERVIEW.md
 │   └── resource-monitoring.md
 │
-├── v0.4.0/                        # Monitoring Complete
+├── v0.4.0/                        # Database Metrics + TUI
 │   ├── VERSION_OVERVIEW.md
 │   ├── database-metrics-collection.md
 │   └── real-time-tui.md
 │
-├── v0.5.0/                        # Data Seeding
+├── v0.5.0/                        # Data Seeding + Workload Generation
 │   ├── VERSION_OVERVIEW.md
-│   └── data-seeding.md
-│
-├── v0.6.0/                        # Workload Generation
-│   ├── VERSION_OVERVIEW.md
+│   ├── data-seeding.md
 │   └── workload-generation.md
 │
-├── v0.7.0/                        # CDC Configuration
+├── v0.6.0/                        # Utilities & State Management
 │   ├── VERSION_OVERVIEW.md
-│   └── cdc-configuration-support.md
+│   └── utilities-and-state.md
+│
+├── v0.7.0/                        # Database Docs + Search
+│   ├── VERSION_OVERVIEW.md
+│   └── database-documentation-search.md
 │
 ├── v0.8.0/                        # Change Event Monitoring
 │   ├── VERSION_OVERVIEW.md
@@ -81,17 +83,16 @@ specs/
 
 ## Release Priorities
 
-### P0 - Core CDC Testing Capability (v0.1.0 - v1.0.0)
-Complete end-to-end CDC testing workflow from database setup through change event monitoring.
+### P0 - Core DB Simulation Capability (v0.1.0 - v1.0.0)
+Complete end-to-end workflow from container setup through seeding, workloads, monitoring, and documentation.
 
 **Key Milestone: v1.0.0** provides:
 1. Spin up databases (PostgreSQL, MySQL, SQL Server)
-2. Configure CDC settings
-3. Deploy schemas
-4. Seed test data
-5. Generate transactional workloads
-6. Monitor change events in real-time
-7. View everything in live TUI dashboard
+2. Apply configuration + init scripts
+3. Seed test data
+4. Generate transactional workloads
+5. Monitor performance in real-time
+6. Access versioned database documentation
 
 ### P1 - Enhanced Testing (v1.1.0 - v1.3.0)
 - Performance benchmarking
@@ -106,29 +107,23 @@ Complete end-to-end CDC testing workflow from database setup through change even
 
 ## Quick Start Guide
 
-### Complete CDC Testing Workflow
+### Typical Workflow
 
 ```bash
 # 1. Create database
-simdb create postgres --version 16
+dbarena create postgres --version 16
 
-# 2. Deploy schema
-simdb config deploy schema.toml --container simdb-postgres-16-xxx
+# 2. (Optional) Run init scripts
+dbarena create postgres --init-script ./schema.sql
 
-# 3. Enable CDC
-simdb cdc enable --container simdb-postgres-16-xxx
+# 3. Seed data
+dbarena seed --config seed-ecommerce.toml --container dbarena-postgres-16-xxx --size medium
 
-# 4. Seed data
-simdb seed --config schema.toml --container simdb-postgres-16-xxx --size medium
+# 4. Run workload
+dbarena workload --container dbarena-postgres-16-xxx --pattern ecommerce --tps 100 --duration 300
 
-# 5. Generate workload
-simdb workload run --container simdb-postgres-16-xxx --pattern cdc_focused --tps 100
-
-# 6. Monitor changes
-simdb cdc monitor --container simdb-postgres-16-xxx
-
-# 7. Or use TUI for everything
-simdb tui
+# 5. Monitor in TUI
+dbarena stats --multipane
 ```
 
 ## Performance Targets
@@ -180,9 +175,7 @@ Run benchmarks:
 - Docker container management
 - Multi-database support
 - Interactive Rust CLI
-- TOML-based configuration
-- Database-agnostic schemas
-- Automatic DDL generation
+- TOML/YAML configuration for env + init scripts
 
 ### Monitoring (v0.3.0 - v0.4.0)
 - Resource monitoring (CPU, memory, disk, network)
@@ -190,28 +183,29 @@ Run benchmarks:
 - Real-time TUI dashboard
 - Live log streaming
 
-### Testing Capabilities (v0.5.0 - v0.6.0)
+### Testing Capabilities (v0.5.0)
 - Schema-aware data seeding
 - Realistic data generation
 - Workload patterns (read-heavy, write-heavy, balanced, CDC-focused)
 - Concurrent connection simulation
 - Custom SQL script execution
+ 
+### Documentation & Search (v0.7.0 planned)
+- Versioned official documentation packs per database
+- Fast local search for LLMs and humans
 
-### CDC Features (v0.7.0 - v0.8.0)
-- PostgreSQL logical replication
-- MySQL binlog configuration
-- SQL Server CDC/Change Tracking
-- Real-time change event monitoring
-- Event rate tracking
-- Replication lag monitoring
+## Spec Policy
+
+- **Code is the source of truth.** When specs disagree with code, update specs or explicitly mark as Planned/Not Implemented.
+- `specs/IMPLEMENTATION_TRUTH.md` reflects current CLI behavior and config schema.
+- Each `VERSION_OVERVIEW.md` must declare status: Implemented / Partially Implemented / Planned.
 
 ## Documentation
 
 Each version includes:
-- **VERSION_OVERVIEW.md**: Release summary, features, value proposition, success criteria
-- **Feature specs**: Detailed technical requirements, architecture, implementation details
-- **CLI examples**: Complete command examples with expected output
-- **Testing strategy**: Unit, integration, and manual testing scenarios
+- **VERSION_OVERVIEW.md**: Release summary, status, success criteria
+- **Feature specs**: Technical requirements and design details
+- **CLI examples**: Must match current clap definitions
 
 ## Contributing
 

@@ -296,6 +296,66 @@ pub enum Commands {
     /// Container template management
     #[command(subcommand)]
     Template(TemplateCommands),
+
+    /// Seed database with generated data
+    Seed {
+        /// Container name or ID
+        container: String,
+
+        /// Path to seed configuration file
+        #[arg(long)]
+        config: std::path::PathBuf,
+
+        /// Size preset (small, medium, large)
+        #[arg(long)]
+        size: Option<String>,
+
+        /// Deterministic seed value for reproducibility
+        #[arg(long)]
+        seed: Option<u64>,
+
+        /// Truncate tables before seeding
+        #[arg(long)]
+        truncate: bool,
+
+        /// Incremental mode (don't truncate, add to existing data)
+        #[arg(long)]
+        incremental: bool,
+
+        /// Override row counts (e.g., users=1000,orders=5000)
+        #[arg(long)]
+        rows: Option<String>,
+    },
+
+    /// Run workload against database
+    Workload {
+        /// Container name or ID
+        container: String,
+
+        /// Workload pattern (oltp, ecommerce, olap, etc.)
+        #[arg(long)]
+        pattern: Option<String>,
+
+        /// Path to workload configuration file
+        #[arg(long)]
+        config: Option<std::path::PathBuf>,
+
+        /// Number of concurrent connections
+        #[arg(long)]
+        connections: Option<usize>,
+
+        /// Target transactions per second
+        #[arg(long)]
+        tps: Option<usize>,
+
+        /// Duration in seconds
+        #[arg(long)]
+        duration: Option<u64>,
+
+        /// Total transaction count
+        #[arg(long)]
+        transactions: Option<u64>,
+    },
 }
 
 #[derive(clap::Subcommand)]
