@@ -1,9 +1,9 @@
-use bollard::Docker;
 use bollard::image::{CommitContainerOptions, ListImagesOptions, RemoveImageOptions};
+use bollard::Docker;
 use std::sync::Arc;
 
-use crate::error::{DBArenaError, Result};
 use super::metadata::Snapshot;
+use crate::error::{DBArenaError, Result};
 
 /// Storage manager for snapshot images
 pub struct SnapshotStorage {
@@ -32,8 +32,18 @@ impl SnapshotStorage {
 
         let config = CommitContainerOptions {
             container: container_id.to_string(),
-            repo: snapshot.image_tag.split(':').next().unwrap_or("dbarena-snapshot").to_string(),
-            tag: snapshot.image_tag.split(':').nth(1).unwrap_or("latest").to_string(),
+            repo: snapshot
+                .image_tag
+                .split(':')
+                .next()
+                .unwrap_or("dbarena-snapshot")
+                .to_string(),
+            tag: snapshot
+                .image_tag
+                .split(':')
+                .nth(1)
+                .unwrap_or("latest")
+                .to_string(),
             comment: snapshot.message.clone().unwrap_or_default(),
             author: "dbarena".to_string(),
             pause,
@@ -47,7 +57,9 @@ impl SnapshotStorage {
         self.docker
             .commit_container(config, bollard::container::Config::<String>::default())
             .await
-            .map_err(|e| DBArenaError::SnapshotError(format!("Failed to commit container: {}", e)))?;
+            .map_err(|e| {
+                DBArenaError::SnapshotError(format!("Failed to commit container: {}", e))
+            })?;
 
         Ok(())
     }
@@ -59,11 +71,10 @@ impl SnapshotStorage {
             ..Default::default()
         });
 
-        let images = self
-            .docker
-            .list_images(options)
-            .await
-            .map_err(|e| DBArenaError::SnapshotError(format!("Failed to list images: {}", e)))?;
+        let images =
+            self.docker.list_images(options).await.map_err(|e| {
+                DBArenaError::SnapshotError(format!("Failed to list images: {}", e))
+            })?;
 
         let mut snapshots = Vec::new();
         for image in images {
@@ -71,11 +82,8 @@ impl SnapshotStorage {
             let repo_tags = &image.repo_tags;
 
             for tag in repo_tags {
-                if let Some(snapshot) = Snapshot::from_labels(
-                    image.id.clone(),
-                    tag.clone(),
-                    labels,
-                ) {
+                if let Some(snapshot) = Snapshot::from_labels(image.id.clone(), tag.clone(), labels)
+                {
                     snapshots.push(snapshot);
                     break; // Only add once per image
                 }
@@ -117,7 +125,13 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_list_snapshots() {
-        let docker = Docker::connect_with_local_defaults().unwrap();
+        let docker = match Docker::connect_with_local_defaults() {
+            Ok(docker) => docker,
+            Err(_) => return,
+        };
+        if docker.ping().await.is_err() {
+            return;
+        }
         let storage = SnapshotStorage::new(Arc::new(docker));
 
         let result = storage.list_snapshots().await;

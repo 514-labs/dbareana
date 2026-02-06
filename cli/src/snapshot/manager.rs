@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use bollard::Docker;
+use std::sync::Arc;
 
-use crate::container::DatabaseType;
-use crate::error::{DBArenaError, Result};
 use super::metadata::Snapshot;
 use super::storage::SnapshotStorage;
+use crate::container::DatabaseType;
+use crate::error::{DBArenaError, Result};
 
 /// Snapshot manager for creating, restoring, and managing snapshots
 pub struct SnapshotManager {
@@ -51,7 +51,11 @@ impl SnapshotManager {
             .commit_container(container_id, &snapshot, auto_pause)
             .await?;
 
-        tracing::info!("Created snapshot {} from container {}", snapshot.id, container_id);
+        tracing::info!(
+            "Created snapshot {} from container {}",
+            snapshot.id,
+            container_id
+        );
 
         Ok(snapshot)
     }
@@ -90,9 +94,8 @@ impl SnapshotManager {
         use bollard::container::{Config, CreateContainerOptions};
         use std::collections::HashMap;
 
-        let container_name = name.unwrap_or_else(|| {
-            format!("restored-{}-{}", snapshot.name, &snapshot.id[..8])
-        });
+        let container_name =
+            name.unwrap_or_else(|| format!("restored-{}-{}", snapshot.name, &snapshot.id[..8]));
 
         let mut port_bindings = HashMap::new();
         let host_port = port.unwrap_or(0); // 0 means auto-assign
@@ -109,7 +112,10 @@ impl SnapshotManager {
 
         let mut labels = HashMap::new();
         labels.insert("dbarena.managed".to_string(), "true".to_string());
-        labels.insert("dbarena.database".to_string(), snapshot.database_type.to_string());
+        labels.insert(
+            "dbarena.database".to_string(),
+            snapshot.database_type.to_string(),
+        );
         labels.insert("dbarena.restored_from".to_string(), snapshot.id.clone());
 
         let config = Config {
@@ -136,15 +142,26 @@ impl SnapshotManager {
             .docker
             .create_container(Some(options), config)
             .await
-            .map_err(|e| DBArenaError::SnapshotError(format!("Failed to create container from snapshot: {}", e)))?;
+            .map_err(|e| {
+                DBArenaError::SnapshotError(format!(
+                    "Failed to create container from snapshot: {}",
+                    e
+                ))
+            })?;
 
         // Start the container
         self.docker
             .start_container::<String>(&response.id, None)
             .await
-            .map_err(|e| DBArenaError::SnapshotError(format!("Failed to start restored container: {}", e)))?;
+            .map_err(|e| {
+                DBArenaError::SnapshotError(format!("Failed to start restored container: {}", e))
+            })?;
 
-        tracing::info!("Restored snapshot {} to container {}", snapshot.id, container_name);
+        tracing::info!(
+            "Restored snapshot {} to container {}",
+            snapshot.id,
+            container_name
+        );
 
         // Return Container info
         Ok(crate::container::Container {
@@ -154,7 +171,11 @@ impl SnapshotManager {
             version: "snapshot".to_string(),
             status: crate::container::models::ContainerStatus::Running,
             port: snapshot.database_type.default_port(),
-            host_port: if host_port == 0 { None } else { Some(host_port) },
+            host_port: if host_port == 0 {
+                None
+            } else {
+                Some(host_port)
+            },
             persistent: false,
             created_at: chrono::Utc::now().timestamp(),
         })
@@ -183,7 +204,13 @@ mod tests {
     #[tokio::test]
     #[ignore] // Requires Docker
     async fn test_snapshot_manager_creation() {
-        let docker = Docker::connect_with_local_defaults().unwrap();
+        let docker = match Docker::connect_with_local_defaults() {
+            Ok(docker) => docker,
+            Err(_) => return,
+        };
+        if docker.ping().await.is_err() {
+            return;
+        }
         let manager = SnapshotManager::new(Arc::new(docker));
 
         let result = manager.list().await;

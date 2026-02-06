@@ -3,7 +3,10 @@ use bollard::Docker;
 use tar::{Builder, Header};
 use uuid::Uuid;
 
-use bollard::container::{Config, CreateContainerOptions, RemoveContainerOptions, StartContainerOptions, StopContainerOptions};
+use bollard::container::{
+    Config, CreateContainerOptions, RemoveContainerOptions, StartContainerOptions,
+    StopContainerOptions,
+};
 use bollard::image::CreateImageOptions;
 use futures::StreamExt;
 
@@ -65,7 +68,13 @@ async fn cleanup_container(docker: &Docker, container_id: &str) {
 #[ignore]
 async fn debug_tar_upload() {
     // Connect to Docker
-    let docker = Docker::connect_with_local_defaults().expect("Failed to connect");
+    let docker = match Docker::connect_with_local_defaults() {
+        Ok(docker) => docker,
+        Err(_) => return,
+    };
+    if docker.ping().await.is_err() {
+        return;
+    }
 
     let container_id = create_test_container(&docker).await;
 
@@ -121,8 +130,12 @@ async fn debug_tar_upload() {
 
     use bollard::exec::StartExecResults;
 
-    if let StartExecResults::Attached { output: mut stream, .. } =
-        docker.start_exec(&exec.id, None).await.expect("Failed to start exec")
+    if let StartExecResults::Attached {
+        output: mut stream, ..
+    } = docker
+        .start_exec(&exec.id, None)
+        .await
+        .expect("Failed to start exec")
     {
         println!("\nDirectory listing:");
         while let Some(Ok(msg)) = stream.next().await {
@@ -137,7 +150,13 @@ async fn debug_tar_upload() {
 #[ignore]
 async fn debug_tar_upload_with_directory() {
     // Connect to Docker
-    let docker = Docker::connect_with_local_defaults().expect("Failed to connect");
+    let docker = match Docker::connect_with_local_defaults() {
+        Ok(docker) => docker,
+        Err(_) => return,
+    };
+    if docker.ping().await.is_err() {
+        return;
+    }
 
     let container_id = create_test_container(&docker).await;
 
@@ -193,8 +212,12 @@ async fn debug_tar_upload_with_directory() {
 
     use bollard::exec::StartExecResults;
 
-    if let StartExecResults::Attached { output: mut stream, .. } =
-        docker.start_exec(&exec.id, None).await.expect("Failed to start exec")
+    if let StartExecResults::Attached {
+        output: mut stream, ..
+    } = docker
+        .start_exec(&exec.id, None)
+        .await
+        .expect("Failed to start exec")
     {
         println!("\nDirectory listing:");
         while let Some(Ok(msg)) = stream.next().await {
