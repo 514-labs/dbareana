@@ -21,12 +21,39 @@ impl HealthChecker for PostgresHealthChecker {
     async fn check(&self, container_id: &str) -> Result<bool> {
         debug!("Checking PostgreSQL health for container {}", container_id);
 
+        let inspect = self.docker.inspect_container(container_id, None).await?;
+        let env_vars = inspect
+            .config
+            .and_then(|config| config.env)
+            .unwrap_or_default();
+
+        let mut user = "postgres".to_string();
+        let mut db = "testdb".to_string();
+
+        for env in env_vars {
+            if let Some(value) = env.strip_prefix("POSTGRES_USER=") {
+                user = value.to_string();
+            } else if let Some(value) = env.strip_prefix("POSTGRES_DB=") {
+                db = value.to_string();
+            }
+        }
+
         let exec = self
             .docker
             .create_exec(
                 container_id,
                 CreateExecOptions {
-                    cmd: Some(vec!["pg_isready", "-U", "postgres"]),
+                    cmd: Some(vec![
+                        "psql".to_string(),
+                        "-U".to_string(),
+                        user,
+                        "-d".to_string(),
+                        db,
+                        "-t".to_string(),
+                        "-A".to_string(),
+                        "-c".to_string(),
+                        "SELECT 1".to_string(),
+                    ]),
                     attach_stdout: Some(true),
                     attach_stderr: Some(true),
                     ..Default::default()
@@ -42,8 +69,10 @@ impl HealthChecker for PostgresHealthChecker {
                 stdout.push_str(&msg.to_string());
             }
 
-            // pg_isready returns 0 (success) when the database is ready
-            let is_healthy = stdout.contains("accepting connections");
+            let inspect = self.docker.inspect_exec(&exec.id).await?;
+            let exit_code = inspect.exit_code.unwrap_or(1);
+
+            let is_healthy = exit_code == 0 && stdout.contains('1');
             debug!("PostgreSQL health check result: {}", is_healthy);
             Ok(is_healthy)
         } else {
@@ -67,12 +96,35 @@ impl HealthChecker for MySQLHealthChecker {
     async fn check(&self, container_id: &str) -> Result<bool> {
         debug!("Checking MySQL health for container {}", container_id);
 
+        let inspect = self.docker.inspect_container(container_id, None).await?;
+        let env_vars = inspect
+            .config
+            .and_then(|config| config.env)
+            .unwrap_or_default();
+
+        let mut password = "mysql".to_string();
+        for env in env_vars {
+            if let Some(value) = env.strip_prefix("MYSQL_ROOT_PASSWORD=") {
+                password = value.to_string();
+            }
+        }
+
         let exec = self
             .docker
             .create_exec(
                 container_id,
                 CreateExecOptions {
-                    cmd: Some(vec!["mysqladmin", "ping", "-h", "localhost", "-pmysql"]),
+                    cmd: Some(vec![
+                        "mysql".to_string(),
+                        "-u".to_string(),
+                        "root".to_string(),
+                        format!("-p{}", password),
+                        "--protocol=SOCKET".to_string(),
+                        "--connect-timeout=2".to_string(),
+                        "-N".to_string(),
+                        "-e".to_string(),
+                        "SHOW VARIABLES LIKE 'port'; SHOW GLOBAL STATUS LIKE 'Uptime';".to_string(),
+                    ]),
                     attach_stdout: Some(true),
                     attach_stderr: Some(true),
                     ..Default::default()
@@ -88,8 +140,36 @@ impl HealthChecker for MySQLHealthChecker {
                 stdout.push_str(&msg.to_string());
             }
 
-            // mysqladmin ping returns "mysqld is alive" when ready
-            let is_healthy = stdout.contains("mysqld is alive");
+            let inspect = self.docker.inspect_exec(&exec.id).await?;
+            let exit_code = inspect.exit_code.unwrap_or(1);
+
+            let mut uptime_ok = false;
+            let mut port_ok = false;
+
+            for line in stdout.lines() {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    if parts[0].eq_ignore_ascii_case("Uptime") {
+                        let digits: String = parts[1]
+                            .chars()
+                            .take_while(|c| c.is_ascii_digit())
+                            .collect();
+                        if let Ok(uptime) = digits.parse::<u64>() {
+                            uptime_ok = uptime >= 5;
+                        }
+                    } else if parts[0].eq_ignore_ascii_case("port") {
+                        let digits: String = parts[1]
+                            .chars()
+                            .take_while(|c| c.is_ascii_digit())
+                            .collect();
+                        if let Ok(port) = digits.parse::<u64>() {
+                            port_ok = port > 0;
+                        }
+                    }
+                }
+            }
+
+            let is_healthy = exit_code == 0 && uptime_ok && port_ok;
             debug!("MySQL health check result: {}", is_healthy);
             Ok(is_healthy)
         } else {

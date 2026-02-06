@@ -2,6 +2,16 @@ use std::path::PathBuf;
 
 /// Base directory for docs storage.
 pub fn docs_base_dir() -> PathBuf {
+    if let Ok(override_dir) = std::env::var("DBARENA_DOCS_DIR") {
+        if !override_dir.trim().is_empty() {
+            return PathBuf::from(override_dir);
+        }
+    }
+    if let Ok(xdg) = std::env::var("XDG_DATA_HOME") {
+        if !xdg.trim().is_empty() {
+            return PathBuf::from(xdg).join("dbarena").join("docs");
+        }
+    }
     if let Ok(home) = std::env::var("HOME") {
         return PathBuf::from(home).join(".local").join("share").join("dbarena").join("docs");
     }

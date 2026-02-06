@@ -158,6 +158,27 @@ dbarena exec my-postgres "SELECT * FROM users;"
 - ✅ **Comprehensive Error Reporting** - Detailed script errors with line numbers and suggestions
 - ✅ **Log Management** - Automatic logging of init script execution
 - ✅ **SQL Execution** - Execute SQL scripts on running containers (inline or from file)
+
+## Database Documentation Search (v0.7.0 Planned)
+
+Install and search official database documentation packs locally:
+
+```bash
+# List available and installed doc packs
+dbarena docs list
+
+# Install a specific pack (requires license acceptance)
+dbarena docs install postgres --version 16 --accept-license
+
+# Search a specific database + version
+dbarena docs search --db postgres --version 16 --query "logical replication"
+
+# Show a specific result by doc_id
+dbarena docs show --doc-id postgres-16-7f3a2d9c7b11f0a4
+
+# Remove an installed pack
+dbarena docs remove postgres --version 16
+```
 - ✅ **Config Utilities** - Validate, show, and initialize configuration files
 - ✅ **Interactive Profile Selection** - Select profiles during interactive create
 

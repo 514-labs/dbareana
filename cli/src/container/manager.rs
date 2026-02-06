@@ -195,9 +195,11 @@ impl ContainerManager {
     }
 
     fn find_available_port(&self) -> u16 {
-        // Simple random port allocation in the ephemeral range
-        // In production, this should check for actual availability
-        rand::random::<u16>() % 10000 + 50000
+        // Bind to port 0 to ask the OS for a free ephemeral port.
+        // This reduces collisions during parallel test runs.
+        std::net::TcpListener::bind("127.0.0.1:0")
+            .and_then(|listener| listener.local_addr().map(|addr| addr.port()))
+            .unwrap_or_else(|_| rand::random::<u16>() % 10000 + 50000)
     }
 
     fn build_env_vars(&self, config: &ContainerConfig) -> Vec<String> {

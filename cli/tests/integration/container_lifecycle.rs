@@ -1,5 +1,5 @@
 use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
-use crate::common::docker_available;
+use crate::common::{docker_available, unique_container_name};
 
 #[tokio::test]
 #[ignore] // Requires Docker
@@ -17,15 +17,16 @@ async fn test_postgres_container_lifecycle() {
     let manager = ContainerManager::new(client);
 
     // Create a container
+    let name = unique_container_name("test-postgres-lifecycle");
     let config = ContainerConfig::new(DatabaseType::Postgres)
-        .with_name("test-postgres-lifecycle".to_string());
+        .with_name(name.clone());
 
     let container = manager
         .create_container(config)
         .await
         .expect("Failed to create container");
 
-    assert_eq!(container.name, "test-postgres-lifecycle");
+    assert_eq!(container.name, name);
     assert_eq!(container.database_type, "postgres");
 
     // Start the container
@@ -76,15 +77,16 @@ async fn test_mysql_container_creation() {
 
     let manager = ContainerManager::new(client);
 
+    let name = unique_container_name("test-mysql-lifecycle");
     let config = ContainerConfig::new(DatabaseType::MySQL)
-        .with_name("test-mysql-lifecycle".to_string());
+        .with_name(name.clone());
 
     let container = manager
         .create_container(config)
         .await
         .expect("Failed to create container");
 
-    assert_eq!(container.name, "test-mysql-lifecycle");
+    assert_eq!(container.name, name);
     assert_eq!(container.database_type, "mysql");
 
     // Cleanup
@@ -109,8 +111,9 @@ async fn test_find_container_by_name() {
 
     let manager = ContainerManager::new(client);
 
+    let name = unique_container_name("test-find-container");
     let config = ContainerConfig::new(DatabaseType::Postgres)
-        .with_name("test-find-container".to_string());
+        .with_name(name.clone());
 
     let container = manager
         .create_container(config)
@@ -119,13 +122,13 @@ async fn test_find_container_by_name() {
 
     // Find by name
     let found = manager
-        .find_container("test-find-container")
+        .find_container(&name)
         .await
         .expect("Failed to find container")
         .expect("Container not found");
 
     assert_eq!(found.id, container.id);
-    assert_eq!(found.name, "test-find-container");
+    assert_eq!(found.name, name);
 
     // Find by ID prefix
     let found_by_id = manager

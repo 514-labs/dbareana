@@ -2,16 +2,41 @@
 /// These tests require Docker to be running
 ///
 /// Run with: cargo test --test integration -- --ignored
-
 use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
 use std::fs;
 use std::time::Duration;
+use tokio::time::sleep;
 
 #[path = "../common/mod.rs"]
 mod common;
 use common::{
-    create_and_start_container, docker_available, execute_query, tempdir, unique_container_name,
+    create_and_start_container, docker_available, execute_query, free_port, tempdir,
+    unique_container_name,
 };
+
+async fn execute_query_with_retry(
+    container_id: &str,
+    query: &str,
+    database_type: DatabaseType,
+) -> anyhow::Result<String> {
+    let attempts = 10;
+    for attempt in 1..=attempts {
+        match execute_query(container_id, query, database_type.clone()).await {
+            Ok(result) => return Ok(result),
+            Err(err) => {
+                let message = err.to_string();
+                let is_transient = message.contains("database system is shutting down")
+                    || message.contains("the database system is starting up")
+                    || message.contains("could not connect to server");
+                if !is_transient || attempt == attempts {
+                    return Err(err);
+                }
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+    }
+    unreachable!("retry loop always returns");
+}
 
 // ============================================================================
 // Execute Inline SQL Tests
@@ -37,26 +62,32 @@ async fn test_exec_inline_sql_postgres() {
 
     // Execute inline SQL
     let create_table = "CREATE TABLE exec_test (id SERIAL PRIMARY KEY, name VARCHAR(50));";
-    let result = execute_query(&test_container.id, create_table, DatabaseType::Postgres)
+    let result = execute_query_with_retry(&test_container.id, create_table, DatabaseType::Postgres)
         .await
         .expect("Failed to execute SQL");
 
     // Should succeed (may have CREATE TABLE in output)
-    assert!(!result.contains("ERROR"), "SQL should execute without error");
+    assert!(
+        !result.contains("ERROR"),
+        "SQL should execute without error"
+    );
 
     // Insert data
     let insert = "INSERT INTO exec_test (name) VALUES ('test1'), ('test2');";
-    execute_query(&test_container.id, insert, DatabaseType::Postgres)
+    execute_query_with_retry(&test_container.id, insert, DatabaseType::Postgres)
         .await
         .expect("Failed to insert data");
 
     // Query data
     let select = "SELECT COUNT(*) FROM exec_test;";
-    let result = execute_query(&test_container.id, select, DatabaseType::Postgres)
+    let result = execute_query_with_retry(&test_container.id, select, DatabaseType::Postgres)
         .await
         .expect("Failed to query data");
 
-    assert!(result.contains("2") || result.contains("(2 rows)"), "Should have 2 rows");
+    assert!(
+        result.contains("2") || result.contains("(2 rows)"),
+        "Should have 2 rows"
+    );
 }
 
 #[tokio::test]
@@ -77,13 +108,17 @@ async fn test_exec_inline_sql_mysql() {
         .expect("Failed to create container");
 
     // Execute inline SQL
-    let create_table = "CREATE TABLE exec_mysql (id INT AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100));";
+    let create_table =
+        "CREATE TABLE exec_mysql (id INT AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100));";
     let result = execute_query(&test_container.id, create_table, DatabaseType::MySQL)
         .await
         .expect("Failed to execute SQL");
 
     // Should succeed
-    assert!(!result.contains("ERROR"), "SQL should execute without error");
+    assert!(
+        !result.contains("ERROR"),
+        "SQL should execute without error"
+    );
 }
 
 #[tokio::test]
@@ -180,7 +215,10 @@ INSERT INTO file_test (title) VALUES ('Third Post');
         .await
         .expect("Failed to query");
 
-    assert!(result.contains("3") || result.contains("(3 rows)"), "Should have 3 rows");
+    assert!(
+        result.contains("3") || result.contains("(3 rows)"),
+        "Should have 3 rows"
+    );
 }
 
 #[tokio::test]
@@ -220,7 +258,10 @@ async fn test_exec_file_not_found() {
     .await;
 
     // Should fail because file doesn't exist
-    assert!(result.is_err(), "Should fail when script file doesn't exist");
+    assert!(
+        result.is_err(),
+        "Should fail when script file doesn't exist"
+    );
 }
 
 // ============================================================================
@@ -263,11 +304,11 @@ async fn test_exec_list_running_containers() {
     // Create and start multiple containers
     let config1 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-exec-list-1"))
-        .with_port(15440);
+        .with_port(free_port());
 
     let config2 = ContainerConfig::new(DatabaseType::Postgres)
         .with_name(unique_container_name("test-exec-list-2"))
-        .with_port(15441);
+        .with_port(free_port());
 
     let container1 = create_and_start_container(config1, Duration::from_secs(60))
         .await
@@ -293,6 +334,15 @@ async fn test_exec_list_running_containers() {
         containers.iter().any(|c| c.id == container2.id),
         "Should find container 2"
     );
+
+    let _ = container1
+        .manager
+        .destroy_container(&container1.id, false)
+        .await;
+    let _ = container2
+        .manager
+        .destroy_container(&container2.id, false)
+        .await;
 }
 
 // ============================================================================
@@ -397,7 +447,10 @@ ROLLBACK;
     .await
     .expect("Failed to count");
 
-    assert!(result.contains("0") || result.contains("(0 rows)"), "Should have 0 rows after rollback");
+    assert!(
+        result.contains("0") || result.contains("(0 rows)"),
+        "Should have 0 rows after rollback"
+    );
 }
 
 // ============================================================================

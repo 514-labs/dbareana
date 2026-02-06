@@ -214,19 +214,7 @@ async fn execute_single_script(
     let inspect = docker.inspect_exec(&exec.id).await?;
     let exit_code = inspect.exit_code.unwrap_or(1);
 
-    // When continue_on_error is true, psql doesn't use ON_ERROR_STOP=1,
-    // so it returns exit code 0 even with errors. Check output for errors.
-    let has_errors = if continue_on_error {
-        match db_type {
-            DatabaseType::Postgres => output.contains("ERROR:"),
-            DatabaseType::MySQL => output.contains("ERROR "),
-            DatabaseType::SQLServer => output.contains("Msg "),
-        }
-    } else {
-        false
-    };
-
-    if exit_code != 0 || has_errors {
+    if exit_code != 0 {
         return Err(crate::DBArenaError::InitScriptFailed(format!(
             "Script failed with exit code {}: {}",
             exit_code, output
@@ -240,7 +228,7 @@ async fn execute_single_script(
 }
 
 /// Build the exec command for running a script
-fn build_exec_command(db_type: DatabaseType, script_path: &str, config: &ContainerConfig, continue_on_error: bool) -> Vec<String> {
+fn build_exec_command(db_type: DatabaseType, script_path: &str, config: &ContainerConfig, _continue_on_error: bool) -> Vec<String> {
     match db_type {
         DatabaseType::Postgres => {
             let user = config
@@ -248,10 +236,11 @@ fn build_exec_command(db_type: DatabaseType, script_path: &str, config: &Contain
                 .get("POSTGRES_USER")
                 .map(|s| s.as_str())
                 .unwrap_or("postgres");
-            // Always use the postgres database for init scripts
-            // The POSTGRES_DB env var is for the docker-entrypoint to create a database,
-            // but that database might not be fully initialized when we run init scripts
-            let db = "postgres";
+            let db = config
+                .env_vars
+                .get("POSTGRES_DB")
+                .map(|s| s.as_str())
+                .unwrap_or("postgres");
 
             let mut cmd = vec![
                 "psql".to_string(),
@@ -261,11 +250,8 @@ fn build_exec_command(db_type: DatabaseType, script_path: &str, config: &Contain
                 db.to_string(),
             ];
 
-            // Only stop on error if continue_on_error is false
-            if !continue_on_error {
-                cmd.push("-v".to_string());
-                cmd.push("ON_ERROR_STOP=1".to_string());
-            }
+            cmd.push("-v".to_string());
+            cmd.push("ON_ERROR_STOP=1".to_string());
 
             cmd.push("-f".to_string());
             cmd.push(script_path.to_string());
@@ -308,6 +294,7 @@ fn build_exec_command(db_type: DatabaseType, script_path: &str, config: &Contain
                 "sa".to_string(),
                 "-P".to_string(),
                 password.to_string(),
+                "-b".to_string(),
                 "-i".to_string(),
                 script_path.to_string(),
             ]
@@ -439,8 +426,8 @@ LINE 1: INSRT INTO users (name) VALUES ('test');
         assert!(cmd.contains(&"postgres".to_string()));
         assert!(cmd.contains(&"ON_ERROR_STOP=1".to_string()));
 
-        // Test with continue_on_error = true
+        // Test with continue_on_error = true (still uses ON_ERROR_STOP)
         let cmd_continue = build_exec_command(DatabaseType::Postgres, "/tmp/test.sql", &config, true);
-        assert!(!cmd_continue.contains(&"ON_ERROR_STOP=1".to_string()));
+        assert!(cmd_continue.contains(&"ON_ERROR_STOP=1".to_string()));
     }
 }

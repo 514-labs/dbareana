@@ -10,7 +10,7 @@ use crate::error::{DBArenaError, Result};
 
 pub async fn fetch_docs(pack: &DocPack, source_dir: Option<&Path>) -> Result<Vec<NormalizedDoc>> {
     let client = reqwest::Client::builder()
-        .user_agent("dbarena-docs/0.7.0")
+        .user_agent("curl/7.79.1")
         .build()
         .map_err(|e| DBArenaError::DocsError(format!("Failed to build HTTP client: {}", e)))?;
 
@@ -53,11 +53,15 @@ pub async fn fetch_docs(pack: &DocPack, source_dir: Option<&Path>) -> Result<Vec
             continue;
         }
 
-        let mut content = String::new();
-        entry.read_to_string(&mut content)?;
+        let mut bytes = Vec::new();
+        entry.read_to_end(&mut bytes)?;
+        let content = match String::from_utf8(bytes) {
+            Ok(text) => text,
+            Err(err) => String::from_utf8_lossy(err.as_bytes()).to_string(),
+        };
 
         if let Some(dir) = source_dir {
-            let dest = dir.join(relative.as_ref());
+            let dest = dir.join(&relative);
             if let Some(parent) = dest.parent() {
                 std::fs::create_dir_all(parent)?;
             }

@@ -3,8 +3,8 @@ use std::path::Path;
 use serde::Serialize;
 use tantivy::collector::TopDocs;
 use tantivy::query::{BooleanQuery, Occur, QueryParser, TermQuery};
-use tantivy::schema::Facet;
-use tantivy::{Index, Term};
+use tantivy::schema::{Facet, Value};
+use tantivy::{Index, TantivyDocument, Term};
 
 use crate::docs::index::IndexFields;
 use crate::error::{DBArenaError, Result};
@@ -50,7 +50,7 @@ pub fn search_pack(
     let version_query = TermQuery::new(version_term, tantivy::schema::IndexRecordOption::Basic);
 
     let boolean_query = BooleanQuery::new(vec![
-        (Occur::Must, user_query.clone()),
+        (Occur::Must, user_query),
         (Occur::Must, Box::new(db_query)),
         (Occur::Must, Box::new(version_query)),
     ]);
@@ -61,33 +61,33 @@ pub fn search_pack(
 
     let mut results = Vec::new();
     for (score, doc_address) in top_docs {
-        let doc = searcher
+        let doc: TantivyDocument = searcher
             .doc(doc_address)
             .map_err(|e| DBArenaError::DocsError(format!("Failed to load doc: {}", e)))?;
 
         let doc_id = doc
             .get_first(fields.doc_id)
-            .and_then(|v| v.as_text())
+            .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
         let title = doc
             .get_first(fields.title)
-            .and_then(|v| v.as_text())
+            .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
         let section = doc
             .get_first(fields.section_path)
-            .and_then(|v| v.as_text())
+            .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
         let body = doc
             .get_first(fields.body)
-            .and_then(|v| v.as_text())
+            .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
         let source_url = doc
             .get_first(fields.source_url)
-            .and_then(|v| v.as_text())
+            .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
@@ -117,25 +117,25 @@ pub fn search_pack(
 fn extract_fields(schema: &tantivy::schema::Schema) -> Result<IndexFields> {
     let doc_id = schema
         .get_field("doc_id")
-        .ok_or_else(|| DBArenaError::DocsError("Missing doc_id field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing doc_id field".to_string()))?;
     let db = schema
         .get_field("db")
-        .ok_or_else(|| DBArenaError::DocsError("Missing db field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing db field".to_string()))?;
     let version = schema
         .get_field("version")
-        .ok_or_else(|| DBArenaError::DocsError("Missing version field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing version field".to_string()))?;
     let title = schema
         .get_field("title")
-        .ok_or_else(|| DBArenaError::DocsError("Missing title field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing title field".to_string()))?;
     let section_path = schema
         .get_field("section_path")
-        .ok_or_else(|| DBArenaError::DocsError("Missing section_path field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing section_path field".to_string()))?;
     let body = schema
         .get_field("body")
-        .ok_or_else(|| DBArenaError::DocsError("Missing body field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing body field".to_string()))?;
     let source_url = schema
         .get_field("source_url")
-        .ok_or_else(|| DBArenaError::DocsError("Missing source_url field".to_string()))?;
+        .map_err(|_| DBArenaError::DocsError("Missing source_url field".to_string()))?;
 
     Ok(IndexFields {
         doc_id,

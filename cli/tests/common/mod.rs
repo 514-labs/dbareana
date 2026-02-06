@@ -1,6 +1,7 @@
 /// Common test utilities shared across all test modules
 use dbarena::container::{ContainerConfig, ContainerManager, DatabaseType, DockerClient};
 use dbarena::health::{wait_for_healthy, HealthChecker, MySQLHealthChecker, PostgresHealthChecker, SQLServerHealthChecker};
+use std::net::TcpListener;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -10,8 +11,30 @@ pub struct TestContainer {
     pub manager: ContainerManager,
 }
 
-// Note: Automatic cleanup removed due to Clone issues
-// Tests should explicitly clean up containers when needed
+impl Drop for TestContainer {
+    fn drop(&mut self) {
+        let id = self.id.clone();
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                if let Ok(client) = DockerClient::new() {
+                    let manager = ContainerManager::new(client);
+                    let _ = manager.destroy_container(&id, false).await;
+                }
+            });
+        } else {
+            std::thread::spawn(move || {
+                if let Ok(rt) = tokio::runtime::Runtime::new() {
+                    rt.block_on(async move {
+                        if let Ok(client) = DockerClient::new() {
+                            let manager = ContainerManager::new(client);
+                            let _ = manager.destroy_container(&id, false).await;
+                        }
+                    });
+                }
+            });
+        }
+    }
+}
 
 /// Create a test container with the given configuration
 pub async fn create_test_container(
@@ -35,6 +58,7 @@ pub async fn create_and_start_container(
     config: ContainerConfig,
     timeout: Duration,
 ) -> anyhow::Result<TestContainer> {
+    let db_type = config.database;
     let test_container = create_test_container(config).await?;
 
     test_container
@@ -42,7 +66,13 @@ pub async fn create_and_start_container(
         .start_container(&test_container.id)
         .await?;
 
-    wait_for_healthy_container(&test_container, timeout).await?;
+    let effective_timeout = match db_type {
+        DatabaseType::MySQL => std::cmp::max(timeout, Duration::from_secs(180)),
+        DatabaseType::Postgres => std::cmp::max(timeout, Duration::from_secs(120)),
+        DatabaseType::SQLServer => std::cmp::max(timeout, Duration::from_secs(180)),
+    };
+
+    wait_for_healthy_container(&test_container, effective_timeout).await?;
 
     Ok(test_container)
 }
@@ -92,14 +122,39 @@ pub async fn execute_query(
     let client = DockerClient::new()?;
     let docker = client.docker();
 
+    let inspect = docker.inspect_container(container_id, None).await?;
+    let env_vars = inspect
+        .config
+        .and_then(|config| config.env)
+        .unwrap_or_default();
+
+    let mut env_map = std::collections::HashMap::new();
+    for env in env_vars {
+        if let Some((key, value)) = env.split_once('=') {
+            env_map.insert(key.to_string(), value.to_string());
+        }
+    }
+
     let exec_config = match database_type {
         DatabaseType::Postgres => bollard::exec::CreateExecOptions {
             cmd: Some(vec![
-                "psql",
-                "-U",
-                "postgres",
-                "-c",
-                query,
+                "psql".to_string(),
+                "-U".to_string(),
+                env_map
+                    .get("POSTGRES_USER")
+                    .cloned()
+                    .unwrap_or_else(|| "postgres".to_string()),
+                "-d".to_string(),
+                env_map
+                    .get("POSTGRES_DB")
+                    .cloned()
+                    .unwrap_or_else(|| "testdb".to_string()),
+                "-v".to_string(),
+                "ON_ERROR_STOP=1".to_string(),
+                "-t".to_string(),
+                "-A".to_string(),
+                "-c".to_string(),
+                query.to_string(),
             ]),
             attach_stdout: Some(true),
             attach_stderr: Some(true),
@@ -107,11 +162,19 @@ pub async fn execute_query(
         },
         DatabaseType::MySQL => bollard::exec::CreateExecOptions {
             cmd: Some(vec![
-                "mysql",
-                "-uroot",
-                "-ppassword",
-                "-e",
-                query,
+                "mysql".to_string(),
+                "-uroot".to_string(),
+                env_map
+                    .get("MYSQL_ROOT_PASSWORD")
+                    .map(|value| format!("-p{}", value))
+                    .unwrap_or_else(|| "-pmysql".to_string()),
+                "-D".to_string(),
+                env_map
+                    .get("MYSQL_DATABASE")
+                    .cloned()
+                    .unwrap_or_else(|| "testdb".to_string()),
+                "-e".to_string(),
+                query.to_string(),
             ]),
             attach_stdout: Some(true),
             attach_stderr: Some(true),
@@ -119,15 +182,19 @@ pub async fn execute_query(
         },
         DatabaseType::SQLServer => bollard::exec::CreateExecOptions {
             cmd: Some(vec![
-                "/opt/mssql-tools/bin/sqlcmd",
-                "-S",
-                "localhost",
-                "-U",
-                "sa",
-                "-P",
-                "YourStrong@Passw0rd",
-                "-Q",
-                query,
+                "/opt/mssql-tools/bin/sqlcmd".to_string(),
+                "-S".to_string(),
+                "localhost".to_string(),
+                "-U".to_string(),
+                "sa".to_string(),
+                "-P".to_string(),
+                env_map
+                    .get("SA_PASSWORD")
+                    .cloned()
+                    .unwrap_or_else(|| "YourStrong@Passw0rd".to_string()),
+                "-b".to_string(),
+                "-Q".to_string(),
+                query.to_string(),
             ]),
             attach_stdout: Some(true),
             attach_stderr: Some(true),
@@ -149,12 +216,28 @@ pub async fn execute_query(
         }
     }
 
+    let inspect = docker.inspect_exec(&exec.id).await?;
+    let exit_code = inspect.exit_code.unwrap_or(1);
+    if exit_code != 0 {
+        return Err(anyhow::anyhow!(
+            "Command failed with exit code {}: {}",
+            exit_code,
+            output
+        ));
+    }
+
     Ok(output)
 }
 
 /// Create a temporary directory for test files
 pub fn tempdir() -> anyhow::Result<TempDir> {
     Ok(tempfile::tempdir()?)
+}
+
+/// Find a free local port for binding.
+pub fn free_port() -> u16 {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind to local port");
+    listener.local_addr().expect("Failed to read local addr").port()
 }
 
 /// Generate a unique test container name

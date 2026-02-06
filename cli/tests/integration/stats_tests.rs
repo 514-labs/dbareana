@@ -6,19 +6,23 @@ use tokio::time::sleep;
 use dbarena::monitoring::{DockerStatsCollector, MetricsCollector};
 use dbarena::container::{ContainerManager, DockerClient, ContainerConfig, DatabaseType};
 
+#[path = "../common/mod.rs"]
+mod common;
+
 /// Helper to create a test container
 async fn create_test_container() -> Result<String, Box<dyn std::error::Error>> {
     let docker_client = DockerClient::new()?;
     let manager = ContainerManager::new(docker_client);
 
     let config = ContainerConfig::new(DatabaseType::Postgres)
-        .with_name("test-stats-container".to_string())
+        .with_name(common::unique_container_name("test-stats-container"))
         .with_version("16-alpine".to_string()); // Use alpine for smaller image
 
     let container = manager.create_container(config).await?;
+    manager.start_container(&container.id).await?;
 
     // Wait a bit for container to stabilize
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(5)).await;
 
     Ok(container.id)
 }
